@@ -16,8 +16,8 @@
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js" crossorigin>
 <link rel="preload" href="assets/targets.mind" as="fetch" crossorigin>
 <link rel="preload" href="assets/base.webp" as="image">
-<link rel="preload" href="assets/cut.webp" as="image">
-<link href="https://fonts.googleapis.com/css2?family=Anek+Devanagari:wdth,wght@75..100,600..800&family=Kalam:wght@400;700&family=Mukta:wght@600;800&family=Special+Elite&display=swap" rel="stylesheet">
+<link rel="preload" href="assets/cutL.webp" as="image">
+<link href="https://fonts.googleapis.com/css2?family=Anek+Devanagari:wdth,wght@75..100,600..800&family=Kalam:wght@400;700&family=Mukta:wght@600;700;800&family=Special+Elite&display=swap" rel="stylesheet">
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -26,508 +26,486 @@
 } }
 </script>
 <style>
-  :root { --paper: #efe5d2; --ink: #15100b; --red: #c8102e; --green: #1d6b43; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #15100b; color: var(--ink); }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #15100b; color: #15100b; }
   #stage { position: fixed; inset: 0; }
   #stage canvas, #stage video { display: block; }
   body.flat { background: radial-gradient(ellipse at 50% 42%, #3a2a1c 0%, #15100b 75%); }
   .hidden { opacity: 0 !important; visibility: hidden; }
-  .fade { transition: opacity .35s, visibility .35s, transform .35s; }
-
-  /* scanning */
+  .fade { transition: opacity .35s, visibility .35s; }
   #scan { position: fixed; inset: 0; z-index: 4; pointer-events: none; display: grid; place-items: center; }
-  #scan .frame { position: relative; width: min(64vw, 46vh); aspect-ratio: 2 / 3; }
+  #scan .frame { position: relative; width: min(64vw, 46vh); aspect-ratio: 2 / 3; animation: breathe 1.8s ease-in-out infinite; }
   #scan .frame i { position: absolute; width: 34px; height: 34px; border: 0 solid #f3e9d6; filter: drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
   #scan .frame i:nth-child(1) { left: 0; top: 0; border-left-width: 5px; border-top-width: 5px; transform: rotate(-2deg); }
   #scan .frame i:nth-child(2) { right: 0; top: 0; border-right-width: 5px; border-top-width: 5px; transform: rotate(3deg); }
   #scan .frame i:nth-child(3) { left: 0; bottom: 0; border-left-width: 5px; border-bottom-width: 5px; transform: rotate(2deg); }
   #scan .frame i:nth-child(4) { right: 0; bottom: 0; border-right-width: 5px; border-bottom-width: 5px; transform: rotate(-3deg); }
-  #scan .frame { animation: breathe 1.8s ease-in-out infinite; }
   @keyframes breathe { 50% { transform: scale(.96); } }
   #scan p { position: fixed; left: 0; right: 0; bottom: max(36px, env(safe-area-inset-bottom)); margin: 0; text-align: center; font: 700 24px/1.2 'Kalam', cursive; color: #f3e9d6; text-shadow: 0 2px 6px rgba(0,0,0,.7); transform: rotate(-2deg); }
-  #scan p small { display: block; font: 13px 'Special Elite', monospace; letter-spacing: .04em; opacity: .85; transform: rotate(1deg); }
-
-  /* captions on torn paper */
-  #cap { position: fixed; left: 0; right: 0; bottom: max(26px, env(safe-area-inset-bottom)); z-index: 6; display: flex; justify-content: center; padding: 0 14px; pointer-events: none; }
-  #cap .strip { max-width: 520px; background: var(--paper); padding: 14px 20px 12px; box-shadow: 0 6px 18px rgba(0,0,0,.45);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .2 0 0 0 0 .1 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    transition: opacity .25s, transform .3s cubic-bezier(.2,1.6,.4,1); }
-  #cap .strip.out { opacity: 0; transform: translateY(14px) rotate(0deg) !important; }
-  #cap .hi { display: block; font: 700 27px/1.15 'Anek Devanagari', sans-serif; font-variation-settings: 'wdth' 82; }
-  #cap .en { display: block; margin-top: 11px; font: 13.5px/1.35 'Special Elite', monospace; color: #4a4036; }
-  #cap em { font-style: normal; color: var(--red); background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10' preserveAspectRatio='none'%3E%3Cpath d='M2 6 Q25 2 50 6 T98 5' stroke='%23c8102e' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") bottom / 100% 8px no-repeat; padding-bottom: 4px; }
-  #cap q { quotes: "“" "”"; font-family: 'Kalam', cursive; font-weight: 700; font-size: 1.05em; }
-
-  /* year card */
-  #year { position: fixed; inset: 0; z-index: 7; display: grid; place-items: center; pointer-events: none; }
-  #year div { text-align: center; transform: rotate(-4deg); }
-  #year b { display: block; font: 800 clamp(110px, 34vw, 190px)/.8 'Anek Devanagari'; font-variation-settings: 'wdth' 75; color: var(--red);
-    text-shadow: 6px 5px 0 rgba(21,16,11,.85); letter-spacing: -.02em; }
-  #year i { display: inline-block; margin-top: 8px; font: 700 26px 'Kalam'; font-style: normal; color: #f3e9d6; background: var(--ink); padding: 2px 14px; transform: rotate(3deg); }
-  #year.pop div { animation: slam .45s cubic-bezier(.2,1.8,.4,1); }
-  @keyframes slam { from { transform: rotate(-4deg) scale(1.9); opacity: 0; } }
-
-  /* rewind */
-  #rw { position: fixed; inset: 0; z-index: 7; pointer-events: none;
-    background: repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 2px, transparent 2px 5px), rgba(30,40,80,.18); animation: jit .12s steps(2) infinite; }
-  #rw b { position: absolute; left: 22px; top: max(22px, env(safe-area-inset-top)); font: 800 44px/1 'Anek Devanagari'; font-variation-settings: 'wdth' 80; color: #fff; text-shadow: -3px 0 #ff2a6d, 3px 0 #2af0ff; }
-  #rw span { position: absolute; right: 22px; top: max(30px, env(safe-area-inset-top)); font: 16px 'Special Elite'; color: #fff; }
-  @keyframes jit { 50% { transform: translateX(2px); } }
-
-  /* sound + fallback */
-  #snd { position: fixed; top: max(14px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%) rotate(-2deg); z-index: 8; font: 700 16px 'Kalam'; background: #f3e9d6; color: var(--ink); padding: 4px 14px; box-shadow: 3px 3px 0 var(--ink); white-space: nowrap; }
-  #flatLink { position: fixed; left: 50%; bottom: max(110px, calc(env(safe-area-inset-bottom) + 90px)); transform: translateX(-50%) rotate(1.5deg); z-index: 8; font: 700 18px 'Kalam'; color: #f3e9d6; background: none; border: 0; text-decoration: underline wavy #c8102e; text-underline-offset: 6px; white-space: nowrap; cursor: pointer; }
-  #err { position: fixed; left: 16px; right: 16px; top: 70px; z-index: 12; background: var(--red); color: #fff; padding: 10px 14px; font: 700 15px 'Mukta'; display: none; }
-
-  /* end: the closed case file */
-  #end { position: fixed; inset: 0; z-index: 9; display: grid; place-items: end center; padding: 0 12px max(14px, env(safe-area-inset-bottom)); pointer-events: none; }
-  #end .sheet { pointer-events: auto; position: relative; width: 100%; max-width: 440px; background: var(--paper); padding: 26px 22px 18px; transform: rotate(-1.2deg);
-    box-shadow: 0 14px 40px rgba(0,0,0,.55); clip-path: var(--torn); background-image: inherit; }
-  #end .sheet::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .2 0 0 0 0 .1 0 0 0 .1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
-  #end .typed { font: 13px 'Special Elite'; color: #4a4036; }
-  #end .old { position: relative; display: inline-block; margin-top: 10px; font: 700 19px/1.2 'Anek Devanagari'; font-variation-settings: 'wdth' 82; color: #6d6153; }
-  #end .old svg { position: absolute; left: -4px; right: -4px; top: 30%; width: calc(100% + 8px); height: 60%; overflow: visible; }
-  #end h2 { margin: 6px 0 0; font: 800 46px/.9 'Anek Devanagari'; font-variation-settings: 'wdth' 75; }
-  #end h2 mark { background: none; color: var(--green); position: relative; }
-  #end h2 mark::after { content: ""; position: absolute; left: -4px; right: -6px; bottom: -2px; height: 10px;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10' preserveAspectRatio='none'%3E%3Cpath d='M2 7 Q30 2 55 6 T98 4' stroke='%231d6b43' stroke-width='3.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat; }
-  #end .note { position: absolute; right: 18px; bottom: 64px; font: 700 18px/1.1 'Kalam'; color: var(--red); transform: rotate(-7deg); text-align: right; }
-  #end .stampC { position: absolute; right: 18px; top: 16px; font: 800 15px 'Anek Devanagari'; color: var(--green); border: 3px solid var(--green); padding: 2px 10px 0; transform: rotate(8deg); opacity: .85; letter-spacing: .04em; }
-  #end .sig { margin-top: 16px; padding-top: 10px; border-top: 1.5px dashed #9c8f7c; display: flex; align-items: end; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-  #end .sig .who { font: 700 40px/1 'Kalam'; color: #1d2c6b; transform: rotate(-4deg); transform-origin: left bottom; }
-  #end .sig .who small { display: block; margin-top: 8px; font: 13px/1.5 'Special Elite'; color: var(--ink); transform: rotate(4deg); }
-  #end .again { font: 700 19px 'Kalam'; background: none; border: 0; color: var(--ink); text-decoration: underline wavy var(--red); text-underline-offset: 5px; cursor: pointer; padding: 6px 0; }
-  #end .foot { margin-top: 10px; font: 12px 'Special Elite'; color: #6d6153; }
-  @media (prefers-reduced-motion: reduce) { #scan .frame, #rw { animation: none; } }
+  #snd { position: fixed; top: max(14px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%) rotate(-2deg); z-index: 8; font: 700 16px 'Kalam'; background: #f3e9d6; padding: 4px 14px; box-shadow: 3px 3px 0 #15100b; white-space: nowrap; }
+  #flatLink { position: fixed; left: 50%; bottom: max(96px, calc(env(safe-area-inset-bottom) + 80px)); transform: translateX(-50%) rotate(1.5deg); z-index: 8; font: 700 18px 'Kalam'; color: #f3e9d6; background: none; border: 0; text-decoration: underline wavy #c8102e; text-underline-offset: 6px; white-space: nowrap; cursor: pointer; }
+  @media (prefers-reduced-motion: reduce) { #scan .frame { animation: none; } }
 </style>
 </head>
 <body>
 <div id="stage"></div>
-
-<div id="scan" class="fade hidden">
-  <div class="frame"><i></i><i></i><i></i><i></i></div>
-  <p>पोस्टर पर कैमरा रखो ↓<small>point your camera at the poster</small></p>
-</div>
-<div id="cap"><div class="strip out" id="strip"><span class="hi" id="capHi"></span><span class="en" id="capEn"></span></div></div>
-<div id="year" class="hidden"><div><b id="yearB">२०१९</b><i id="yearI">पुल का ठेका</i></div></div>
-<div id="rw" class="hidden"><b>◀◀ रिवाइंड</b></div>
+<div id="scan" class="fade hidden"><div class="frame"><i></i><i></i><i></i><i></i></div><p>पोस्टर पर कैमरा रखो</p></div>
 <div id="snd" class="fade hidden">🔊 आवाज़ के लिए कहीं भी टैप करो</div>
 <button id="flatLink" class="fade hidden">पोस्टर सामने नहीं है? यहीं देख लो →</button>
-<div id="err"></div>
-
-<div id="end" class="fade hidden">
-  <div class="sheet" id="sheet">
-    <div class="stampC">केस बंद</div>
-    <div class="old">कमीशन की नींव पर पुल नहीं टिकते।<svg viewBox="0 0 100 10" preserveAspectRatio="none"><path d="M0 6 Q20 2 45 5 T100 3" stroke="#c8102e" stroke-width="2.4" fill="none" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg></div>
-    <h2>सत्यनिष्ठा की नींव पर<br>पुल <mark>टिकते</mark> हैं।</h2>
-    <div class="note">बस एक ‘ना’<br>काफ़ी था।</div>
-    <div class="sig">
-      <div class="who">पुलकित<small>Pulkit · MBA 04<br>Roll No. 250101187 · IIM Mumbai</small></div>
-      <button class="again" id="again">↺ फिर से देखो</button>
-    </div>
-  </div>
-</div>
 
 <script type="module">
 import * as THREE from "three";
 
-/* ================= helpers ================= */
+/* ============ helpers ============ */
 const $ = id => document.getElementById(id);
 const clamp01 = k => Math.max(0, Math.min(1, k));
-const E = { out: t => 1 - Math.pow(1 - t, 3), in: t => t * t * t, io: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
-  back: t => { const c = 1.9; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); } };
 const lerp = (a, b, k) => a + (b - a) * k;
 const show = (el, on) => el.classList.toggle("hidden", !on);
+const E = { out: t => 1 - Math.pow(1 - t, 3), in: t => t * t * t, io: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+  back: t => { const c = 1.9; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); } };
+const rng = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 
-/* poster geometry: 1024 x 1536 px → 1 x 1.5 units, origin at centre */
+/* poster space: 1024 x 1536 px → 1 x 1.5 units, centred */
 const PX = 1 / 1024, toX = x => x * PX - 0.5, toY = y => 0.75 - y * PX;
 const TE = { print: { x: 590, y: 599.5, w: 192.25, h: 285, pivot: { x: 628.4, y: 685 }, angle: 19 }, rest: { x: 697, y: 372, w: 230.7, h: 342 } };
-const CRACK = { x: 545, y: 660 }, STAMP = { x: 874, y: 646 }, BEAM = { a: { x: 452, y: 612 }, b: { x: 842, y: 848 } };
+const NAHI = { x: 391, y: 9, w: 402, h: 358 };
+const CRACK = { x: 545, y: 660 }, STAMP = { x: 874, y: 646 }, BEAM = { a: { x: 452, y: 612 }, b: { x: 842, y: 848 } }, PILLAR = { x: 908, y: 1380 };
 
-/* ================= sound (all synthesized, nothing to download) ================= */
-const AC = window.AudioContext || window.webkitAudioContext;
-const ctx = new AC(), master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination);
-const noiseBuf = (() => { const b = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = b.getChannelData(0); let last = 0;
-  for (let i = 0; i < d.length; i++) { const w = Math.random() * 2 - 1; d[i] = w; } return b; })();
-const brownBuf = (() => { const b = ctx.createBuffer(1, ctx.sampleRate * 3, ctx.sampleRate), d = b.getChannelData(0); let l = 0;
-  for (let i = 0; i < d.length; i++) { l = (l + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = l * 3.5; } return b; })();
-function env(g, t, a, peak, dur) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); }
+/* ============ sound: synthesized, nothing to download ============ */
+const ctx = new (window.AudioContext || window.webkitAudioContext)(), master = ctx.createGain(); master.gain.value = .9; master.connect(ctx.destination);
+const mkBuf = (sec, fn) => { const b = ctx.createBuffer(1, ctx.sampleRate * sec, ctx.sampleRate), d = b.getChannelData(0); fn(d); return b; };
+const noiseBuf = mkBuf(2, d => { for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; });
+const brownBuf = mkBuf(3, d => { let l = 0; for (let i = 0; i < d.length; i++) { l = (l + .02 * (Math.random() * 2 - 1)) / 1.02; d[i] = l * 3.5; } });
+function env(g, t, a, peak, dur) { g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + dur); }
 function noise({ dur = .3, type = "bandpass", f0 = 800, f1 = f0, q = 1, gain = .4, a = .005, buf = noiseBuf, delay = 0 }) {
   const t = ctx.currentTime + delay, s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
   s.buffer = buf; s.loop = true; f.type = type; f.Q.value = q; f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
-  env(g, t, a, gain, dur); s.connect(f).connect(g).connect(master); s.start(t); s.stop(t + dur + .05);
-}
+  env(g, t, a, gain, dur); s.connect(f).connect(g).connect(master); s.start(t); s.stop(t + dur + .05); }
 function tone({ f = 440, f1 = f, dur = .3, type = "sine", gain = .3, a = .005, delay = 0 }) {
   const t = ctx.currentTime + delay, o = ctx.createOscillator(), g = ctx.createGain();
   o.type = type; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
-  env(g, t, a, gain, dur); o.connect(g).connect(master); o.start(t); o.stop(t + dur + .05);
-}
+  env(g, t, a, gain, dur); o.connect(g).connect(master); o.start(t); o.stop(t + dur + .05); }
 const SFX = {
-  whoosh: () => noise({ dur: .45, f0: 300, f1: 2400, q: 1.2, gain: .25, a: .18 }),
+  whoosh: (g = .25) => noise({ dur: .5, f0: 300, f1: 2400, q: 1.2, gain: g, a: .2 }),
   pop: () => { tone({ f: 520, f1: 900, dur: .09, gain: .18 }); noise({ dur: .06, f0: 2500, gain: .1 }); },
-  dha: (d = 0) => { tone({ f: 190, f1: 95, dur: .45, gain: .55, delay: d }); tone({ f: 380, f1: 360, dur: .18, type: "triangle", gain: .12, delay: d }); noise({ dur: .05, f0: 2200, gain: .18, delay: d }); },
-  na: (d = 0) => { tone({ f: 330, f1: 300, dur: .22, type: "triangle", gain: .22, delay: d }); noise({ dur: .04, f0: 4000, gain: .12, delay: d }); },
-  step: (d = 0) => noise({ dur: .07, type: "lowpass", f0: 500, gain: .22, delay: d }),
+  dha: (d = 0) => { tone({ f: 190, f1: 95, dur: .5, gain: .55, delay: d }); tone({ f: 380, f1: 360, dur: .2, type: "triangle", gain: .12, delay: d }); noise({ dur: .05, f0: 2200, gain: .18, delay: d }); },
+  na: (d = 0) => { tone({ f: 330, f1: 300, dur: .24, type: "triangle", gain: .22, delay: d }); noise({ dur: .04, f0: 4000, gain: .12, delay: d }); },
+  step: () => noise({ dur: .07, type: "lowpass", f0: 500, gain: .22 }),
   clink: (d = 0) => { tone({ f: 2400 + Math.random() * 600, dur: .14, type: "triangle", gain: .1, delay: d }); tone({ f: 3900, dur: .1, gain: .05, delay: d + .01 }); },
-  thunk: () => { tone({ f: 130, f1: 45, dur: .28, gain: .8 }); noise({ dur: .09, type: "lowpass", f0: 900, gain: .45 }); },
-  deflate: () => { tone({ f: 420, f1: 110, dur: .6, type: "sawtooth", gain: .06 }); noise({ dur: .5, f0: 1800, f1: 400, gain: .12 }); },
-  honk: () => { [0, .32].forEach(d => { tone({ f: 415, dur: .22, type: "square", gain: .07, delay: d }); tone({ f: 520, dur: .22, type: "square", gain: .05, delay: d }); }); },
-  rumble: (dur) => noise({ dur, type: "lowpass", f0: 90, f1: 160, gain: .9, a: dur * .8, buf: brownBuf }),
+  thunk: () => { tone({ f: 130, f1: 45, dur: .3, gain: .8 }); noise({ dur: .09, type: "lowpass", f0: 900, gain: .45 }); },
+  deflate: () => { tone({ f: 420, f1: 110, dur: .7, type: "sawtooth", gain: .06 }); noise({ dur: .6, f0: 1800, f1: 400, gain: .12 }); },
+  honk: () => [0, .34].forEach(d => { tone({ f: 415, dur: .22, type: "square", gain: .07, delay: d }); tone({ f: 520, dur: .22, type: "square", gain: .05, delay: d }); }),
+  rumble: dur => noise({ dur, type: "lowpass", f0: 90, f1: 170, gain: .9, a: dur * .8, buf: brownBuf }),
   crack: () => { noise({ dur: .14, type: "highpass", f0: 1800, gain: .6 }); tone({ f: 95, f1: 38, dur: .35, gain: .6 }); },
-  crash: () => { noise({ dur: 1.4, type: "lowpass", f0: 3500, f1: 250, gain: .95, a: .01 }); tone({ f: 62, f1: 28, dur: 1.2, gain: .95 });
-    for (let i = 0; i < 9; i++) noise({ dur: .08, f0: 600 + Math.random() * 1800, gain: .25, delay: .35 + i * .11 + Math.random() * .08 }); },
-  heart: () => { tone({ f: 62, f1: 40, dur: .14, gain: .9 }); tone({ f: 58, f1: 38, dur: .14, gain: .7, delay: .24 }); },
-  rewind: () => { tone({ f: 900, f1: 140, dur: 1.1, type: "sawtooth", gain: .06 }); noise({ dur: 1.1, f0: 4000, f1: 500, q: 3, gain: .18 }); },
-  chime: (d = 0) => [261.6, 329.6, 392, 523.3].forEach((f, i) => { tone({ f, dur: 1.6, type: "sine", gain: .16, delay: d + i * .12 }); tone({ f: f * 2.76, dur: .7, gain: .03, delay: d + i * .12 }); }),
+  crash: () => { noise({ dur: 1.5, type: "lowpass", f0: 3500, f1: 250, gain: .95, a: .01 }); tone({ f: 62, f1: 28, dur: 1.3, gain: .95 });
+    for (let i = 0; i < 10; i++) noise({ dur: .08, f0: 600 + Math.random() * 1800, gain: .25, delay: .35 + i * .11 + Math.random() * .08 }); },
+  heart: () => { tone({ f: 62, f1: 40, dur: .14, gain: .9 }); tone({ f: 58, f1: 38, dur: .14, gain: .7, delay: .25 }); },
+  static: () => noise({ dur: .35, type: "highpass", f0: 2000, gain: .3, a: .01 }),
+  sting: () => { [[440, 0], [554, 0], [659, 0], [880, .18]].forEach(([f, d]) => tone({ f, dur: .5, type: "sawtooth", gain: .045, delay: d })); tone({ f: 70, f1: 40, dur: .6, gain: .6 }); noise({ dur: .45, f0: 500, f1: 4000, gain: .15, a: .25 }); },
+  blip: () => tone({ f: 1320, dur: .08, type: "square", gain: .04 }),
+  bell: (f = 392) => { tone({ f, dur: 2.6, gain: .12, a: .01 }); tone({ f: f * 2.01, dur: 1.4, gain: .03 }); tone({ f: f * 3.02, dur: .8, gain: .015 }); },
+  rewind: dur => { const t = ctx.currentTime, o = ctx.createOscillator(), lfo = ctx.createOscillator(), lg = ctx.createGain(), g = ctx.createGain();
+    o.type = "sawtooth"; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(1400, t + dur * .3); o.frequency.exponentialRampToValueAtTime(900, t + dur);
+    lfo.frequency.value = 14; lg.gain.value = 60; lfo.connect(lg).connect(o.frequency);
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.05, t + .3); g.gain.setValueAtTime(.05, t + dur - .3); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g).connect(master); o.start(t); lfo.start(t); o.stop(t + dur); lfo.stop(t + dur);
+    noise({ dur, f0: 3000, f1: 5000, q: 2, gain: .12, a: .3 }); for (let i = 0; i < dur * 7; i++) noise({ dur: .03, f0: 6000, gain: .06, delay: i / 7 }); },
+  stop: () => { tone({ f: 900, f1: 120, dur: .25, type: "sawtooth", gain: .08 }); noise({ dur: .12, type: "lowpass", f0: 1200, gain: .3 }); },
+  marker: () => { noise({ dur: .4, f0: 2600, f1: 3400, q: 6, gain: .16, a: .02 }); tone({ f: 1800, f1: 2300, dur: .3, type: "triangle", gain: .03 }); },
+  peel: () => noise({ dur: .32, type: "highpass", f0: 1200, f1: 5000, gain: .22, a: .01 }),
+  chime: (d = 0) => [261.6, 329.6, 392, 523.3].forEach((f, i) => { tone({ f, dur: 1.8, gain: .15, delay: d + i * .14 }); tone({ f: f * 2.76, dur: .7, gain: .03, delay: d + i * .14 }); }),
 };
 let drone = null;
 function droneOn() { if (drone) return; const g = ctx.createGain(); g.gain.value = 0; const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 520;
   const os = [110, 110.6, 165, 220.4].map(fr => { const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = fr; o.connect(f); o.start(); return o; });
-  f.connect(g).connect(master); g.gain.linearRampToValueAtTime(0.045, ctx.currentTime + 1); drone = { g, os }; }
-function droneOff() { if (!drone) return; const d = drone; drone = null; d.g.gain.linearRampToValueAtTime(0, ctx.currentTime + .5); setTimeout(() => d.os.forEach(o => o.stop()), 700); }
+  f.connect(g).connect(master); g.gain.linearRampToValueAtTime(.04, ctx.currentTime + 1.2); drone = { g, os }; }
+function droneOff() { if (!drone) return; const d = drone; drone = null; d.g.gain.linearRampToValueAtTime(0, ctx.currentTime + .6); setTimeout(() => d.os.forEach(o => o.stop()), 800); }
 const unlock = () => { if (ctx.state !== "running") ctx.resume(); show($("snd"), false); };
-addEventListener("pointerdown", unlock, { passive: true });
 setTimeout(() => { if (ctx.state !== "running") show($("snd"), true); }, 600);
 
-/* ================= captions & overlays ================= */
-const strip = $("strip");
-function torn(el, seed) {
-  const pts = []; let r = seed; const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280;
-  for (let x = 0; x <= 100; x += 4) pts.push(`${x}% ${rnd() * 5}%`);
-  for (let x = 100; x >= 0; x -= 4) pts.push(`${x}% ${95 + rnd() * 5}%`);
-  el.style.clipPath = `polygon(${pts.join(",")})`;
-}
-let capN = 0;
-function cap(hi, en) {
-  strip.classList.add("out");
-  if (!hi) return;
-  setTimeout(() => { $("capHi").innerHTML = hi; $("capEn").textContent = en || ""; torn(strip, 7 + capN * 13);
-    strip.style.transform = `rotate(${(capN % 2 ? 1 : -1) * (0.6 + (capN % 3) * 0.5)}deg)`; capN++; strip.classList.remove("out"); }, 140);
-}
-function year(b, i) { $("yearB").textContent = b; $("yearI").textContent = i; const y = $("year"); show(y, true); y.classList.remove("pop"); void y.offsetWidth; y.classList.add("pop"); setTimeout(() => show(y, false), 1100); }
-
-/* ================= textures ================= */
+/* ============ textures ============ */
 const loader = new THREE.TextureLoader();
 const tex = url => new Promise((res, rej) => loader.load(url, t => { t.colorSpace = THREE.SRGBColorSpace; res(t); }, undefined, rej));
 function canvasTex(w, h, draw) { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.userData.aspect = h / w; return t; }
 function svgTex(svg, w, h) { return new Promise(res => { const im = new Image(); im.onload = () => res(canvasTex(w, h, x => x.drawImage(im, 0, 0, w, h)));
   im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg); }); }
-const fontsReady = Promise.all(["800 60px 'Anek Devanagari'", "700 60px 'Kalam'", "800 40px 'Mukta'", "30px 'Special Elite'"].map(f => document.fonts.load(f))).catch(() => {});
+const fontsReady = Promise.all(["800 60px 'Anek Devanagari'", "700 60px 'Kalam'", "800 40px 'Mukta'", "700 40px 'Mukta'", "30px 'Special Elite'"].map(f => document.fonts.load(f))).catch(() => {});
+const grit = (x, w, h, n = 300) => { x.save(); x.globalCompositeOperation = "destination-out"; for (let i = 0; i < n; i++) { x.globalAlpha = Math.random() * .6; x.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 3, 2); } x.restore(); };
+function tornPaper(x, w, h, seed, fill = "#efe5d2") {
+  const r = rng(seed); x.beginPath(); x.moveTo(0, 10 + r() * 10);
+  for (let px = 0; px <= w; px += 14) x.lineTo(px, 6 + r() * 16);
+  for (let px = w; px >= 0; px -= 14) x.lineTo(px, h - 6 - r() * 16);
+  x.closePath(); x.fillStyle = fill; x.fill(); x.save(); x.clip();
+  for (let i = 0; i < w * h / 90; i++) { x.fillStyle = `rgba(80,55,25,${r() * .06})`; x.fillRect(r() * w, r() * h, 1 + r() * 3, 1); }
+  x.restore(); }
+function wavy(x, x0, x1, y, color, lw = 5) { x.strokeStyle = color; x.lineWidth = lw; x.lineCap = "round"; x.beginPath(); x.moveTo(x0, y); for (let px = x0; px <= x1; px += 8) x.lineTo(px, y + Math.sin(px * .09) * 3); x.stroke(); }
+/* narration: clean floating type, no box. "*word*" = warm red emphasis */
+function lineTex(hi, en, { size = 84 } = {}) {
+  const W = 1200, HF = `800 ${size}px 'Anek Devanagari'`, EF = "30px 'Special Elite'", m = document.createElement("canvas").getContext("2d");
+  const toks = []; hi.split(/(\*[^*]+\*)/).filter(Boolean).forEach(seg => { const em = seg.startsWith("*"); seg.replace(/\*/g, "").split(/(\s+)/).filter(Boolean).forEach(w => toks.push({ w, em })); });
+  m.font = HF; const lines = [[]]; let lw = 0;
+  toks.forEach(t => { const tw = m.measureText(t.w).width; if (lw + tw > W - 80 && t.w.trim()) { lines.push([]); lw = 0; } if (!t.w.trim() && !lines[lines.length - 1].length) return; lines[lines.length - 1].push({ ...t, tw }); lw += tw; });
+  const lh = size * 1.18, H = 40 + lines.length * lh + (en ? 70 : 10) + 30;
+  return canvasTex(W, H, (x, w) => {
+    x.textBaseline = "alphabetic"; x.shadowColor = "rgba(0,0,0,.55)"; x.shadowBlur = 18; x.shadowOffsetY = 4;
+    lines.forEach((ln, i) => { const tot = ln.reduce((s, t) => s + t.tw, 0); let px = (w - tot) / 2; const y = 40 + size + i * lh; x.font = HF;
+      ln.forEach(t => { x.fillStyle = t.em ? "#ff5a5a" : "#f6eedd"; x.fillText(t.w, px, y); px += t.tw; }); });
+    if (en) { x.font = EF; x.fillStyle = "rgba(246,238,221,.72)"; x.textAlign = "center"; x.fillText(en, w / 2, 40 + lines.length * lh + 46); }
+  }); }
+function yearTex(num, tag) { return canvasTex(900, 600, (x, w, h) => {
+  x.translate(w / 2, h / 2 - 30); x.rotate(-.06); x.textAlign = "center"; x.font = "800 300px 'Anek Devanagari'";
+  x.fillStyle = "rgba(21,16,11,.9)"; x.fillText(num, 12, 100); x.fillStyle = "#c8102e"; x.fillText(num, 0, 88);
+  x.rotate(.1); x.font = "700 64px 'Kalam'"; const tw = x.measureText(tag).width; x.fillStyle = "#15100b"; x.fillRect(-tw / 2 - 26, 150, tw + 52, 92); x.fillStyle = "#f3e9d6"; x.fillText(tag, 0, 218);
+  x.setTransform(1, 0, 0, 1, 0, 0); grit(x, w, h, 500); }); }
+function newsTex(head, sub) { return canvasTex(1240, 250, (x, w, h) => {
+  x.fillStyle = "#c8102e"; x.fillRect(0, 30, 270, 150); x.fillStyle = "#fff"; x.font = "800 58px 'Anek Devanagari'"; x.textBaseline = "middle"; x.textAlign = "center"; x.fillText("ब्रेकिंग", 135, 110);
+  x.fillStyle = "#f7f4ee"; x.fillRect(270, 30, w - 270, 150); x.textAlign = "left"; x.fillStyle = "#111"; x.font = "800 60px 'Anek Devanagari'"; x.fillText(head, 300, 90);
+  x.fillStyle = "#555"; x.font = "700 34px 'Mukta'"; x.fillText(sub, 302, 150); x.fillStyle = "#c8102e"; x.fillRect(270, 176, w - 270, 6); }); }
+function tickerTex() { const t = canvasTex(2048, 72, (x, w, h) => { x.fillStyle = "#111"; x.fillRect(0, 0, w, h); x.fillStyle = "#f2b33d"; x.font = "800 38px 'Mukta'"; x.textBaseline = "middle";
+  const s = "ठेकेदार फ़रार   •   अधिकारी निलंबित   •   मुआवज़े की घोषणा   •   जाँच समिति गठित   •   "; let px = 0; while (px < w) { x.fillText(s, px, h / 2 + 2); px += x.measureText(s).width; } });
+  t.wrapS = THREE.RepeatWrapping; return t; }
+const staticTex = () => canvasTex(256, 384, (x, w, h) => { const d = x.createImageData(w, h); for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } x.putImageData(d, 0, 0); });
+function shadowTex() { return canvasTex(256, 256, x => { x.shadowColor = "rgba(0,0,0,1)"; x.shadowBlur = 36; x.shadowOffsetX = 1000; x.fillStyle = "#000"; x.fillRect(40 - 1000, 40, 176, 176); }); }
+function scrimTex() { return canvasTex(256, 256, (x, w) => { const g = x.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); g.addColorStop(0, "rgba(10,7,4,.92)"); g.addColorStop(.6, "rgba(10,7,4,.75)"); g.addColorStop(1, "rgba(10,7,4,0)"); x.fillStyle = g; x.fillRect(0, 0, w, w); }); }
 
-/* shadow-puppet characters (tholu bommalata style: black leather, punched holes, a rod) */
+/* shadow-puppet characters */
 const K = "#15100b", HOLE = "#f3c47a";
 const holes = pts => pts.map(([x, y, r = 3.2]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${HOLE}" opacity=".85"/>`).join("");
 function contractorSVG(pose) {
   const arm = pose === "offer" ? `<path d="M196 170 Q236 200 272 194" fill="none" stroke="${K}" stroke-width="24" stroke-linecap="round"/><circle cx="276" cy="193" r="13" fill="${K}"/>`
     : `<path d="M196 170 Q218 232 206 284" fill="none" stroke="${K}" stroke-width="24" stroke-linecap="round"/><circle cx="205" cy="289" r="13" fill="${K}"/>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 450"><g fill="${K}">
-    <path d="M160 46 V0" stroke="${K}" stroke-width="3"/>
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 450"><g fill="${K}"><path d="M160 46 V0" stroke="${K}" stroke-width="3"/>
     <path d="M122 172 Q98 232 110 284" fill="none" stroke="${K}" stroke-width="24" stroke-linecap="round"/>
     <path d="M120 312 L112 430 L148 430 L162 326 Z"/><path d="M166 326 L180 430 L216 430 L206 312 Z"/>
     <ellipse cx="128" cy="434" rx="30" ry="10"/><ellipse cx="206" cy="434" rx="30" ry="10"/>
     <path d="M108 150 Q82 196 92 252 Q98 300 120 318 L206 318 Q240 282 231 222 Q224 170 200 150 Z"/>
     <rect x="142" y="120" width="34" height="34"/><ellipse cx="160" cy="92" rx="40" ry="44"/>
-    <path d="M120 86 Q122 40 166 42 Q200 46 200 76 Q170 60 132 94 Z"/>
-    <path d="M196 86 L213 104 L196 109 Z"/><path d="M174 114 Q196 104 216 118 Q196 122 174 124 Z"/>
-    ${arm}</g>
-    <rect x="164" y="78" width="42" height="13" rx="5" fill="#c8102e"/>
-    <path d="M140 152 Q162 186 190 152" fill="none" stroke="#e8b45a" stroke-width="4.5"/>
-    <path d="M196 188 l16 -6 l2 14 z" fill="#c8102e"/>
-    ${holes([[150, 205], [128, 232], [168, 236], [148, 262], [184, 270], [132, 290], [166, 296, 2.4], [116, 360, 2.4], [196, 366, 2.4]])}
-  </svg>`;
-}
+    <path d="M120 86 Q122 40 166 42 Q200 46 200 76 Q170 60 132 94 Z"/><path d="M196 86 L213 104 L196 109 Z"/><path d="M174 114 Q196 104 216 118 Q196 122 174 124 Z"/>
+    ${arm}</g><rect x="164" y="78" width="42" height="13" rx="5" fill="#c8102e"/><path d="M140 152 Q162 186 190 152" fill="none" stroke="#e8b45a" stroke-width="4.5"/>
+    <path d="M196 188 l16 -6 l2 14 z" fill="#c8102e"/>${holes([[150, 205], [128, 232], [168, 236], [148, 262], [184, 270], [132, 290], [166, 296, 2.4], [116, 360, 2.4], [196, 366, 2.4]])}</svg>`; }
 function officerSVG(pose) {
-  const arms = {
-    idle: `<path d="M112 142 Q84 182 70 208" fill="none" stroke="${K}" stroke-width="20" stroke-linecap="round"/><circle cx="68" cy="210" r="11" fill="${K}"/>`,
+  const arms = { idle: `<path d="M112 142 Q84 182 70 208" fill="none" stroke="${K}" stroke-width="20" stroke-linecap="round"/><circle cx="68" cy="210" r="11" fill="${K}"/>`,
     take: `<path d="M112 142 Q70 168 30 178" fill="none" stroke="${K}" stroke-width="20" stroke-linecap="round"/><circle cx="26" cy="179" r="11" fill="${K}"/>`,
     stamp: `<path d="M118 140 Q86 104 80 62" fill="none" stroke="${K}" stroke-width="20" stroke-linecap="round"/><circle cx="79" cy="36" r="12" fill="${K}"/><rect x="73" y="42" width="12" height="18" fill="${K}"/><rect x="56" y="58" width="46" height="14" fill="${K}"/><rect x="56" y="72" width="46" height="6" fill="#c8102e"/>`,
-    no: `<path d="M112 142 Q82 130 56 112" fill="none" stroke="${K}" stroke-width="20" stroke-linecap="round"/><rect x="30" y="56" width="30" height="56" rx="13" fill="${K}"/><path d="M58 96 L76 84 L80 94 L62 108 Z" fill="${K}"/><path d="M36 62 v-10 M44 58 v-12 M52 60 v-10" stroke="${K}" stroke-width="7" stroke-linecap="round"/>`,
-  }[pose];
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300"><g fill="${K}">
-    <path d="M140 38 V0" stroke="${K}" stroke-width="3"/>
-    <path d="M96 214 L104 132 Q140 112 180 132 L188 214 Z"/><rect x="128" y="100" width="24" height="28"/>
-    <ellipse cx="140" cy="78" rx="34" ry="38"/><path d="M106 72 Q110 34 146 36 Q178 40 176 68 Q150 52 118 82 Z"/>
-    <path d="M108 74 L93 91 L108 95 Z"/><path d="M100 102 Q114 94 130 102 Q114 107 100 105 Z"/>
-    ${arms}
-    <rect x="10" y="212" width="280" height="16" rx="3"/><path d="M24 228 H276 V300 H24 Z"/>
+    no: `<path d="M112 142 Q82 130 56 112" fill="none" stroke="${K}" stroke-width="20" stroke-linecap="round"/><rect x="30" y="56" width="30" height="56" rx="13" fill="${K}"/><path d="M58 96 L76 84 L80 94 L62 108 Z" fill="${K}"/><path d="M36 62 v-10 M44 58 v-12 M52 60 v-10" stroke="${K}" stroke-width="7" stroke-linecap="round"/>` }[pose];
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300"><g fill="${K}"><path d="M140 38 V0" stroke="${K}" stroke-width="3"/>
+    <path d="M96 214 L104 132 Q140 112 180 132 L188 214 Z"/><rect x="128" y="100" width="24" height="28"/><ellipse cx="140" cy="78" rx="34" ry="38"/>
+    <path d="M106 72 Q110 34 146 36 Q178 40 176 68 Q150 52 118 82 Z"/><path d="M108 74 L93 91 L108 95 Z"/><path d="M100 102 Q114 94 130 102 Q114 107 100 105 Z"/>
+    ${arms}<rect x="10" y="212" width="280" height="16" rx="3"/><path d="M24 228 H276 V300 H24 Z"/>
     <rect x="208" y="200" width="72" height="12"/><rect x="214" y="186" width="66" height="12"/><rect x="210" y="172" width="70" height="12"/></g>
-    <rect x="238" y="170" width="8" height="42" fill="#c8102e"/>
-    <circle cx="116" cy="74" r="11" fill="none" stroke="${HOLE}" stroke-width="3"/><path d="M127 73 H152" stroke="${HOLE}" stroke-width="2.5"/>
-    ${holes([[140, 150], [124, 176], [158, 178], [140, 200], [60, 252, 4], [100, 262, 4], [140, 252, 4], [180, 262, 4], [220, 252, 4], [240, 270, 4]])}
-  </svg>`;
-}
-
-/* hand-drawn wobbly speech bubble */
+    <rect x="238" y="170" width="8" height="42" fill="#c8102e"/><circle cx="116" cy="74" r="11" fill="none" stroke="${HOLE}" stroke-width="3"/><path d="M127 73 H152" stroke="${HOLE}" stroke-width="2.5"/>
+    ${holes([[140, 150], [124, 176], [158, 178], [140, 200], [60, 252, 4], [100, 262, 4], [140, 252, 4], [180, 262, 4], [220, 252, 4], [240, 270, 4]])}</svg>`; }
 function bubbleTex(text, { size = 58, tail = "left", color = K } = {}) {
   return canvasTex(560, 250, (x, w, h) => {
-    let s = text.length * 7 + 3; const r = () => ((s = (s * 9301 + 49297) % 233280) / 233280 - .5) * 7;
-    const L = 20, T = 18, R = w - 20, B = h - 70, rad = 46, pts = [];
-    const arc = (cx, cy, a0) => { for (let a = a0; a <= a0 + Math.PI / 2 + .01; a += Math.PI / 12) pts.push([cx + Math.cos(a) * rad + r(), cy + Math.sin(a) * rad + r()]); };
+    const r = rng(text.length * 7 + 3), j = () => (r() - .5) * 7, L = 20, T = 18, R = w - 20, B = h - 70, rad = 46, pts = [];
+    const arc = (cx, cy, a0) => { for (let a = a0; a <= a0 + Math.PI / 2 + .01; a += Math.PI / 12) pts.push([cx + Math.cos(a) * rad + j(), cy + Math.sin(a) * rad + j()]); };
     arc(R - rad, B - rad, 0); arc(L + rad, B - rad, Math.PI / 2); arc(L + rad, T + rad, Math.PI); arc(R - rad, T + rad, Math.PI * 1.5);
-    x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.closePath();
-    x.fillStyle = "#fbf4e4"; x.fill(); x.lineWidth = 6; x.strokeStyle = K; x.lineJoin = "round"; x.stroke();
+    x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.closePath(); x.fillStyle = "#fbf4e4"; x.fill(); x.lineWidth = 6; x.strokeStyle = K; x.lineJoin = "round"; x.stroke();
     const tx = tail === "left" ? 120 : w - 120, dir = tail === "left" ? -1 : 1;
     x.beginPath(); x.moveTo(tx - 26, B - 3); x.lineTo(tx + dir * 46, h - 8); x.lineTo(tx + 22, B - 3); x.fillStyle = "#fbf4e4"; x.fill();
     x.beginPath(); x.moveTo(tx - 26, B + 1); x.lineTo(tx + dir * 46, h - 8); x.lineTo(tx + 22, B + 1); x.stroke();
-    x.fillStyle = color; x.font = `700 ${size}px 'Kalam'`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(text, w / 2, (T + B) / 2 + 6);
-  });
-}
-function stageTex() {
-  return canvasTex(1024, 720, (x, w, h) => {
-    const g = x.createRadialGradient(w * .5, h * .4, 30, w * .5, h * .45, w * .62);
-    g.addColorStop(0, "#fff1c9"); g.addColorStop(.45, "#f2c070"); g.addColorStop(1, "#6b3612");
-    x.fillStyle = g; x.fillRect(0, 0, w, h);
-    for (let i = 0; i < 9000; i++) { x.fillStyle = `rgba(70,35,10,${Math.random() * .07})`; x.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 3, 1); }
-    x.fillStyle = "#24140a"; x.fillRect(0, h * .87, w, h * .13);
-    x.strokeStyle = "#24140a"; x.lineWidth = 22; x.strokeRect(11, 11, w - 22, h - 22); x.lineWidth = 3; x.strokeRect(34, 34, w - 68, h - 68);
-    x.fillStyle = "#c8102e"; [[34, 34], [w - 34, 34], [34, h - 34], [w - 34, h - 34]].forEach(([a, b]) => { x.save(); x.translate(a, b); x.rotate(Math.PI / 4); x.fillRect(-9, -9, 18, 18); x.restore(); });
-    x.fillStyle = "#3a200d"; x.font = "800 30px 'Mukta'"; x.fillText("लोक निर्माण विभाग", 58, 82);
-  });
-}
+    x.fillStyle = color; x.font = `700 ${size}px 'Kalam'`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(text, w / 2, (T + B) / 2 + 6); }); }
+const stageTex = () => canvasTex(1024, 720, (x, w, h) => {
+  const g = x.createRadialGradient(w * .5, h * .4, 30, w * .5, h * .45, w * .62); g.addColorStop(0, "#fff1c9"); g.addColorStop(.45, "#f2c070"); g.addColorStop(1, "#6b3612");
+  x.fillStyle = g; x.fillRect(0, 0, w, h); for (let i = 0; i < 9000; i++) { x.fillStyle = `rgba(70,35,10,${Math.random() * .07})`; x.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 3, 1); }
+  x.fillStyle = "#24140a"; x.fillRect(0, h * .87, w, h * .13); x.strokeStyle = "#24140a"; x.lineWidth = 22; x.strokeRect(11, 11, w - 22, h - 22); x.lineWidth = 3; x.strokeRect(34, 34, w - 68, h - 68);
+  x.fillStyle = "#c8102e"; [[34, 34], [w - 34, 34], [34, h - 34], [w - 34, h - 34]].forEach(([a, b]) => { x.save(); x.translate(a, b); x.rotate(Math.PI / 4); x.fillRect(-9, -9, 18, 18); x.restore(); });
+  x.fillStyle = "#3a200d"; x.font = "800 30px 'Mukta'"; x.fillText("लोक निर्माण विभाग", 58, 82); });
 const envelopeTex = () => canvasTex(200, 128, (x, w, h) => { x.fillStyle = "#b07a3c"; x.fillRect(4, 4, w - 8, h - 8); x.strokeStyle = "#5a3612"; x.lineWidth = 4; x.strokeRect(4, 4, w - 8, h - 8);
   x.beginPath(); x.moveTo(4, 4); x.lineTo(w / 2, h * .55); x.lineTo(w - 4, 4); x.stroke(); x.fillStyle = "#c8102e"; x.font = "800 56px 'Anek Devanagari'"; x.textAlign = "center"; x.fillText("₹", w / 2, h - 16); });
 const bagTex = () => canvasTex(240, 320, (x, w, h) => { x.fillStyle = "#e3d8c4"; x.strokeStyle = K; x.lineWidth = 6;
   x.beginPath(); x.moveTo(26, 30); x.quadraticCurveTo(w / 2, 10, w - 26, 30); x.lineTo(w - 14, h - 22); x.quadraticCurveTo(w / 2, h - 6, 14, h - 22); x.closePath(); x.fill(); x.stroke();
   x.setLineDash([8, 7]); x.beginPath(); x.moveTo(30, 46); x.quadraticCurveTo(w / 2, 28, w - 30, 46); x.stroke(); x.setLineDash([]);
-  x.fillStyle = K; x.textAlign = "center"; x.font = "800 50px 'Anek Devanagari'"; x.fillText("सीमेंट", w / 2, 150); x.font = "26px 'Special Elite'"; x.fillText("50 KG", w / 2, 196);
-  x.fillStyle = "#c8102e"; x.fillRect(40, 220, w - 80, 10); });
-const markTex = (text, color, { w = 420, h = 200, font = "800 120px 'Anek Devanagari'", box = false, rot = -.12 } = {}) => canvasTex(w, h, (x) => {
+  x.fillStyle = K; x.textAlign = "center"; x.font = "800 50px 'Anek Devanagari'"; x.fillText("सीमेंट", w / 2, 150); x.font = "26px 'Special Elite'"; x.fillText("50 KG", w / 2, 196); x.fillStyle = "#c8102e"; x.fillRect(40, 220, w - 80, 10); });
+const markTex = (text, color, { w = 420, h = 200, font = "800 120px 'Anek Devanagari'", box = false, rot = -.12 } = {}) => canvasTex(w, h, x => {
   x.translate(w / 2, h / 2); x.rotate(rot); x.fillStyle = color; x.strokeStyle = color; x.textAlign = "center"; x.textBaseline = "middle"; x.font = font;
   if (box) { x.lineWidth = 9; x.strokeRect(-w * .44, -h * .34, w * .88, h * .68); x.lineWidth = 3; x.strokeRect(-w * .41, -h * .27, w * .82, h * .54); }
-  x.fillText(text, 0, 6);
-  x.globalCompositeOperation = "destination-out"; for (let i = 0; i < 260; i++) { x.globalAlpha = Math.random() * .7; x.fillRect((Math.random() - .5) * w, (Math.random() - .5) * h, 2 + Math.random() * 3, 2); } });
+  x.fillText(text, 0, 6); x.setTransform(1, 0, 0, 1, 0, 0); grit(x, w, h, 260); });
 const roundStamp = (word, sub, color) => canvasTex(400, 400, (x, w) => { x.translate(w / 2, w / 2); x.rotate(-.22); x.strokeStyle = color; x.fillStyle = color;
   x.lineWidth = 10; x.beginPath(); x.arc(0, 0, 180, 0, Math.PI * 2); x.stroke(); x.lineWidth = 4; x.beginPath(); x.arc(0, 0, 150, 0, Math.PI * 2); x.stroke();
-  x.textAlign = "center"; x.font = "800 92px 'Anek Devanagari'"; x.fillText(word, 0, 18); x.font = "800 34px 'Mukta'"; x.fillText(sub, 0, 72);
-  x.globalCompositeOperation = "destination-out"; for (let i = 0; i < 300; i++) { x.globalAlpha = Math.random() * .7; x.fillRect((Math.random() - .5) * w, (Math.random() - .5) * w, 3, 2); } });
+  x.textAlign = "center"; x.font = "800 92px 'Anek Devanagari'"; x.fillText(word, 0, 18); x.font = "800 34px 'Mukta'"; x.fillText(sub, 0, 72); x.setTransform(1, 0, 0, 1, 0, 0); grit(x, w, w, 300); });
 const beamTex = () => canvasTex(1024, 96, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#fff0b0"); g.addColorStop(.5, "#f2b33d"); g.addColorStop(1, "#b8741a");
-  x.fillStyle = g; x.fillRect(0, 0, w, h); x.fillStyle = "#5a3109"; x.font = "800 54px 'Anek Devanagari'"; x.textBaseline = "middle";
-  let px = 10; while (px < w) { x.fillText("सत्यनिष्ठा ·", px, h / 2 + 4); px += x.measureText("सत्यनिष्ठा · ").width; } });
-const radial = (rgba) => canvasTex(128, 128, (x, w) => { const g = x.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); g.addColorStop(0, rgba); g.addColorStop(1, rgba.replace(/[\d.]+\)$/, "0)")); x.fillStyle = g; x.fillRect(0, 0, w, w); });
+  x.fillStyle = g; x.fillRect(0, 0, w, h); x.fillStyle = "#5a3109"; x.font = "800 54px 'Anek Devanagari'"; x.textBaseline = "middle"; let px = 10; while (px < w) { x.fillText("सत्यनिष्ठा ·", px, h / 2 + 4); px += x.measureText("सत्यनिष्ठा · ").width; } });
+const radial = rgba => canvasTex(128, 128, (x, w) => { const g = x.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); g.addColorStop(0, rgba); g.addColorStop(1, rgba.replace(/[\d.]+\)$/, "0)")); x.fillStyle = g; x.fillRect(0, 0, w, w); });
+const strikeTex = () => canvasTex(900, 140, (x, w) => { x.strokeStyle = "#c8102e"; x.lineCap = "round"; x.lineJoin = "round";
+  for (let p = 0; p < 3; p++) { x.globalAlpha = .55 + p * .15; x.lineWidth = 34 - p * 8; x.beginPath(); x.moveTo(20, 78 + p * 3); for (let i = 1; i <= 12; i++) x.lineTo(20 + i * (w - 40) / 12, 70 + Math.sin(i * 1.3 + p) * 9 + p * 3); x.stroke(); } });
+const vhsTex = () => { const t = canvasTex(8, 8, (x, w) => { x.fillStyle = "rgba(10,14,30,.42)"; x.fillRect(0, 0, w, 3); x.fillStyle = "rgba(60,80,140,.08)"; x.fillRect(0, 3, w, 5); });
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 110); t.magFilter = THREE.NearestFilter; return t; };
+const bandTex = () => canvasTex(512, 48, (x, w, h) => { for (let i = 0; i < 1600; i++) { x.fillStyle = `rgba(255,255,255,${Math.random() * .8})`; x.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 6, 1); } });
+const rwTex = () => canvasTex(760, 190, (x, w, h) => { x.font = "800 120px 'Anek Devanagari'"; x.textBaseline = "middle";
+  x.fillStyle = "#ff2a6d"; x.fillText("◀◀ रिवाइंड", 26, h / 2 + 6); x.fillStyle = "#2af0ff"; x.fillText("◀◀ रिवाइंड", 34, h / 2 + 6); x.fillStyle = "#fff"; x.fillText("◀◀ रिवाइंड", 30, h / 2 + 6); });
+const endTex = () => canvasTex(1000, 1000, (x, w, h) => {
+  tornPaper(x, w, h, 41); x.textBaseline = "alphabetic";
+  x.save(); x.translate(780, 92); x.rotate(.14); x.strokeStyle = "#1d6b43"; x.fillStyle = "#1d6b43"; x.lineWidth = 6; x.strokeRect(-110, -44, 220, 76); x.font = "800 46px 'Anek Devanagari'"; x.textAlign = "center"; x.fillText("केस बंद", 0, 14); x.restore();
+  x.font = "700 44px 'Anek Devanagari'"; x.fillStyle = "#7a6e5f"; const old = "कमीशन की नींव पर पुल नहीं टिकते।"; x.fillText(old, 60, 150);
+  const ow = x.measureText(old).width; x.strokeStyle = "#c8102e"; x.lineWidth = 5; x.beginPath(); x.moveTo(52, 138); for (let p = 52; p <= 60 + ow + 8; p += 10) x.lineTo(p, 136 + Math.sin(p * .05) * 4); x.stroke();
+  x.font = "800 100px 'Anek Devanagari'"; x.fillStyle = "#15100b"; x.fillText("सत्यनिष्ठा की नींव पर", 56, 280);
+  let px = 56; x.fillText("पुल ", px, 395); px += x.measureText("पुल ").width; x.fillStyle = "#1d6b43"; x.fillText("टिकते", px, 395); const tw = x.measureText("टिकते").width;
+  wavy(x, px - 4, px + tw + 6, 418, "#1d6b43", 7); px += tw; x.fillStyle = "#15100b"; x.fillText(" हैं।", px, 395);
+  x.save(); x.translate(760, 560); x.rotate(-.12); x.fillStyle = "#c8102e"; x.font = "700 50px 'Kalam'"; x.textAlign = "center"; x.fillText("बस एक ‘ना’", 0, 0); x.fillText("काफ़ी था।", 0, 62); x.restore();
+  x.setLineDash([10, 9]); x.strokeStyle = "#9c8f7c"; x.lineWidth = 3; x.beginPath(); x.moveTo(56, 470); x.lineTo(w - 56, 470); x.stroke(); x.setLineDash([]);
+  x.save(); x.translate(60, 640); x.rotate(-.07); x.fillStyle = "#1d2c6b"; x.font = "700 130px 'Kalam'"; x.fillText("पुलकित", 0, 0); const sw = x.measureText("पुलकित").width;
+  x.strokeStyle = "#1d2c6b"; x.lineWidth = 5; x.beginPath(); x.moveTo(-6, 30); x.bezierCurveTo(sw * .4, 10, sw * .8, 50, sw + 30, 12); x.stroke(); x.restore();
+  x.fillStyle = "#15100b"; x.font = "34px 'Special Elite'"; x.fillText("Pulkit · MBA 04", 64, 740); x.fillText("Roll No. 250101187 · IIM Mumbai", 64, 788);
+  x.font = "800 34px 'Anek Devanagari'"; x.fillStyle = "#6d6153"; x.fillText("सत्यनिष्ठा से समृद्धि", 64, 862);
+  x.fillStyle = "#15100b"; x.font = "700 44px 'Kalam'"; const hint = "↺ फिर से देखने के लिए टैप करो"; x.fillText(hint, 64, 940); wavy(x, 64, 64 + x.measureText(hint).width, 956, "#c8102e", 4); });
 
 let T = null;
 async function loadAll() {
-  const [base, head, te, cut, front] = await Promise.all(["base", "head", "te", "cut", "front"].map(n => tex(`assets/${n}.webp`)));
+  const [base, head, te, cutL, cutR, front, nahi] = await Promise.all(["base", "head", "te", "cutL", "cutR", "front", "nahi"].map(n => tex(`assets/${n}.webp`)));
   await fontsReady;
-  const [cWalk, cOffer, oIdle, oTake, oStamp, oNo] = await Promise.all([
-    svgTex(contractorSVG("walk"), 300, 450), svgTex(contractorSVG("offer"), 300, 450),
+  const [cWalk, cOffer, oIdle, oTake, oStamp, oNo] = await Promise.all([svgTex(contractorSVG("walk"), 300, 450), svgTex(contractorSVG("offer"), 300, 450),
     svgTex(officerSVG("idle"), 360, 360), svgTex(officerSVG("take"), 360, 360), svgTex(officerSVG("stamp"), 360, 360), svgTex(officerSVG("no"), 360, 360)]);
-  T = { base, head, te, cut, front, cWalk, cOffer, oIdle, oTake, oStamp, oNo,
-    stage: stageTex(), env: envelopeTex(), bag: bagTex(),
-    bChai: bubbleTex("साहब… चाय-पानी?", { size: 56, tail: "left" }), bPass: bubbleTex("फ़ाइल पास!", { size: 64, tail: "right" }),
-    bNo: bubbleTex("ना। नियम से होगा।", { size: 54, tail: "right", color: "#c8102e" }), bOops: bubbleTex("अरे…!", { size: 70, tail: "left" }),
-    minus: markTex("−30%", "#c8102e", { w: 360, h: 170, font: "800 120px 'Anek Devanagari'" }),
-    skip: markTex("जाँच: SKIPPED", "#c8102e", { w: 560, h: 170, font: "800 66px 'Anek Devanagari'", box: true, rot: -.1 }),
+  T = { base, head, te, cutL, cutR, front, nahi, cWalk, cOffer, oIdle, oTake, oStamp, oNo, stage: stageTex(), env: envelopeTex(), bag: bagTex(),
+    bChai: bubbleTex("साहब… चाय-पानी?", { size: 56 }), bPass: bubbleTex("फ़ाइल पास!", { size: 64, tail: "right" }),
+    bNo: bubbleTex("ना। नियम से होगा।", { size: 54, tail: "right", color: "#c8102e" }), bOops: bubbleTex("अरे…!", { size: 70 }),
+    minus: markTex("−30%", "#c8102e", { w: 360, h: 170 }), skip: markTex("जाँच: SKIPPED", "#c8102e", { w: 560, h: 170, font: "800 66px 'Anek Devanagari'", box: true, rot: -.1 }),
     sRed: roundStamp("स्वीकृत", "कमीशन लेकर", "#c8102e"), sGreen: roundStamp("अस्वीकृत", "बिना कमीशन", "#1d6b43"),
-    beam: beamTex(), glow: radial("rgba(255,214,120,.95)"), dust: radial("rgba(120,110,95,.75)"),
+    beam: beamTex(), glow: radial("rgba(255,214,120,.95)"), dust: radial("rgba(120,110,95,.75)"), shadow: shadowTex(), scrim: scrimTex(), strike: strikeTex(),
+    vhs: vhsTex(), band: bandTex(), rw: rwTex(), end: endTex(), stat: staticTex(), ticker: tickerTex(),
+    y2019: yearTex("२०१९", "पुल का ठेका"), y2026: yearTex("२०२६", "सात साल बाद"),
+    n1: newsTex("एक और पुल गिरा", "सात साल पुराना पुल · कई घायल"), n2: newsTex("‘जाँच के आदेश दे दिए गए हैं’", "…फिर से"), n3: newsTex("सवाल वही: ज़िम्मेदार कौन?", "ठेका किसने पास किया?"),
+    lYatri: lineTex("सुबह 9:40। पुल पर एक ऑटो।", "9:40 am. An auto on the bridge."), lYou: lineTex("उसमें बैठे हैं — *आप।*", "And in it, you."),
+    lPrice: lineTex("₹5,000 की रिश्वत।", "A ₹5,000 bribe."), lPrice2: lineTex("कीमत: *ज़िंदगियाँ।*", "The price: lives."),
+    w1: lineTex("लेकिन…", "But…", { size: 120 }), w2: lineTex("क्या होता अगर उस दिन *रिश्वत* ली ही न जाती?", "What if the bribe had never been taken?"),
+    w3: lineTex("चलो, देखते हैं…", "Let's see what could have been.", { size: 100 }), lStand: lineTex("अब पुल *टिकते* हैं।", "Now the bridge stands.", { size: 96 }),
     rupee: canvasTex(128, 128, x => { x.fillStyle = "#c8102e"; x.font = "800 104px 'Anek Devanagari'"; x.textAlign = "center"; x.fillText("₹", 64, 100); }),
-    chunk: canvasTex(128, 128, x => { x.fillStyle = "#3b3833"; x.beginPath(); [[20, 30], [70, 12], [110, 40], [100, 96], [52, 116], [16, 84]].forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.fill(); x.fillStyle = "#77706a"; x.fillRect(40, 40, 30, 10); }),
-  };
+    chunk: canvasTex(128, 128, x => { x.fillStyle = "#3b3833"; x.beginPath(); [[20, 30], [70, 12], [110, 40], [100, 96], [52, 116], [16, 84]].forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.fill(); x.fillStyle = "#77706a"; x.fillRect(40, 40, 30, 10); }) };
   return T;
 }
 
-/* ================= the scene ================= */
+/* ============ scene graph ============ */
 function plane(map, w, h, order) { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false })); m.renderOrder = order; return m; }
+function floating(map, w, order, g, shadow = true) { const h = w * map.userData.aspect, m = plane(map, w, h, order); g.add(m);
+  if (shadow) { const sh = plane(T.shadow, w * 1.15, h * 1.25, order - 1); g.add(sh); m.userData.sh = sh; } return m; }
 function build() {
   const root = new THREE.Group(), g = new THREE.Group(); root.add(g);
   const base = plane(T.base, 1, 1.5, 0); base.material.transparent = false; base.material.depthWrite = true;
-  const head = plane(T.head, 1, 1.5, 1), cut = plane(T.cut, 1, 1.5, 3), front = plane(T.front, 1, 1.5, 4);
-  g.add(base, head, cut, front);
-  // falling glyph
-  const p = TE.print, r = TE.rest, te = plane(T.te, p.w * PX, p.h * PX, 2);
-  const P = new THREE.Vector3(toX(p.pivot.x), toY(p.pivot.y), 0), C = new THREE.Vector3(toX(p.x + p.w / 2), toY(p.y + p.h / 2), 0);
+  const head = plane(T.head, 1, 1.5, 1), cutL = plane(T.cutL, 1, 1.5, 3), front = plane(T.front, 1, 1.5, 4);
+  const cutRPivot = new THREE.Group(), cutR = plane(T.cutR, 1, 1.5, 3); cutRPivot.position.set(toX(PILLAR.x), toY(PILLAR.y), 0); cutR.position.set(-toX(PILLAR.x), -toY(PILLAR.y), 0); cutRPivot.add(cutR);
+  g.add(base, head, cutL, cutRPivot, front);
+  const nahi = plane(T.nahi, NAHI.w * PX, NAHI.h * PX, 2), nahiHome = new THREE.Vector3(toX(NAHI.x + NAHI.w / 2), toY(NAHI.y + NAHI.h / 2), 0); g.add(nahi);
+  const strike = plane(T.strike, NAHI.w * PX * 1.08, NAHI.w * PX * 1.08 * 140 / 900, 3); strike.geometry.translate(NAHI.w * PX * .54, 0, 0); strike.position.set(-NAHI.w * PX * .54, -NAHI.h * PX * .02, .002); strike.rotation.z = -.05; nahi.add(strike);
+  const p = TE.print, r = TE.rest, te = plane(T.te, p.w * PX, p.h * PX, 2), P = new THREE.Vector3(toX(p.pivot.x), toY(p.pivot.y), 0), C = new THREE.Vector3(toX(p.x + p.w / 2), toY(p.y + p.h / 2), 0);
   te.position.copy(C).sub(P); const pivot = new THREE.Group(); pivot.add(te); g.add(pivot);
   const s = r.w / p.w, RC = new THREE.Vector3(toX(r.x + r.w / 2), toY(r.y + r.h / 2), 0);
-  const poses = { print: { pos: P.clone(), rot: -THREE.MathUtils.degToRad(p.angle), s: 1 },
-    fallen: { pos: P.clone().add(new THREE.Vector3(0.1, -1.3, 0.2)), rot: -THREE.MathUtils.degToRad(p.angle + 110), s: 1 },
+  const poses = { print: { pos: P.clone(), rot: -THREE.MathUtils.degToRad(p.angle), s: 1 }, fallen: { pos: P.clone().add(new THREE.Vector3(.1, -1.3, .2)), rot: -THREE.MathUtils.degToRad(p.angle + 110), s: 1 },
     rest: { pos: RC.clone().sub(te.position.clone().multiplyScalar(s)), rot: 0, s } };
-  // golden beam across the gap
-  const A = new THREE.Vector3(toX(BEAM.a.x), toY(BEAM.a.y), 0), B = new THREE.Vector3(toX(BEAM.b.x), toY(BEAM.b.y), 0);
-  const len = A.distanceTo(B), beamGeo = new THREE.PlaneGeometry(len, 0.05); beamGeo.translate(len / 2, 0, 0);
-  const beam = new THREE.Mesh(beamGeo, new THREE.MeshBasicMaterial({ map: T.beam, transparent: true, depthWrite: false })); beam.renderOrder = 5;
-  beam.position.copy(A); beam.rotation.z = Math.atan2(B.y - A.y, B.x - A.x); g.add(beam);
-  const beamGlow = plane(T.glow, len * 1.3, 0.3, 4); beamGlow.material.blending = THREE.AdditiveBlending; beamGlow.position.copy(A.clone().add(B).multiplyScalar(.5)); beamGlow.rotation.z = beam.rotation.z; g.add(beamGlow);
-  const teGlow = plane(T.glow, 0.5, 0.5, 1); teGlow.material.blending = THREE.AdditiveBlending; teGlow.position.copy(RC); g.add(teGlow);
-  const stampG = plane(T.sGreen, 0.24, 0.24, 6); stampG.position.set(toX(STAMP.x), toY(STAMP.y), 0); g.add(stampG);
+  const A = new THREE.Vector3(toX(BEAM.a.x), toY(BEAM.a.y), 0), B = new THREE.Vector3(toX(BEAM.b.x), toY(BEAM.b.y), 0), len = A.distanceTo(B);
+  const beam = plane(T.beam, len, .05, 5); beam.geometry.translate(len / 2, 0, 0); beam.position.copy(A); beam.rotation.z = Math.atan2(B.y - A.y, B.x - A.x); g.add(beam);
+  const beamGlow = plane(T.glow, len * 1.3, .3, 4); beamGlow.material.blending = THREE.AdditiveBlending; beamGlow.position.copy(A.clone().add(B).multiplyScalar(.5)); beamGlow.rotation.z = beam.rotation.z; g.add(beamGlow);
+  const teGlow = plane(T.glow, .5, .5, 1); teGlow.material.blending = THREE.AdditiveBlending; teGlow.position.copy(RC); g.add(teGlow);
+  const stampG = plane(T.sGreen, .24, .24, 6); stampG.position.set(toX(STAMP.x), toY(STAMP.y), 0); g.add(stampG);
   const dim = plane(null, 1.02, 1.52, 7); dim.material.color.set(0x0b0805); g.add(dim);
-  // particles
-  const parts = []; for (let i = 0; i < 30; i++) { const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: i % 3 === 0 ? T.rupee : T.chunk, transparent: true, depthWrite: false })); m.renderOrder = 6; g.add(m); parts.push({ m, v: new THREE.Vector3(), spin: 0, on: false }); }
-  const puffs = []; for (let i = 0; i < 9; i++) { const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.dust, transparent: true, depthWrite: false })); m.renderOrder = 5; g.add(m); puffs.push({ m, v: new THREE.Vector3(), age: 9 }); }
-
-  // pop-up shadow-puppet stage, hinged at its bottom edge
-  const flip = new THREE.Group(); flip.position.set(0, -0.3, 0.26); g.add(flip);
-  const card = new THREE.Group(); card.position.set(0, 0.33, 0); flip.add(card);
-  const back = plane(T.stage, 0.94, 0.66, 10); card.add(back);
-  const shadow = plane(null, 0.97, 0.69, 9); shadow.material.color.set(0x000000); shadow.position.set(0.012, -0.012, -0.004); card.add(shadow);
-  const con = plane(T.cWalk, 0.2, 0.3, 11); const off = plane(T.oIdle, 0.3, 0.3, 11); off.position.set(0.2, -0.105, 0.002);
-  const envM = plane(T.env, 0.075, 0.048, 12);
-  const bub1 = plane(T.bChai, 0.3, 0.134, 13), bub2 = plane(T.bPass, 0.3, 0.134, 13);
-  const sRed = plane(T.sRed, 0.17, 0.17, 14), sGr = plane(T.sGreen, 0.17, 0.17, 14);
-  const bags = [0, 1, 2].map(i => { const b = plane(T.bag, 0.1, 0.133, 12); b.geometry.translate(0, 0.066, 0); b.position.set(-0.17 + i * 0.13, -0.255, 0.004); return b; });
-  const minus = plane(T.minus, 0.15, 0.07, 14), skip = plane(T.skip, 0.3, 0.09, 14);
-  minus.position.set(0.11, 0.0, 0.006); skip.position.set(-0.02, 0.15, 0.006); sRed.position.set(0.0, 0.14, 0.006); sGr.position.set(0.0, 0.14, 0.006);
+  const R = rng(99), parts = [];
+  for (let i = 0; i < 30; i++) { const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: i % 3 === 0 ? T.rupee : T.chunk, transparent: true, depthWrite: false })); m.renderOrder = 6; g.add(m);
+    parts.push({ m, p0: new THREE.Vector3(toX(CRACK.x) + (R() - .3) * .14, toY(CRACK.y) + (R() - .5) * .1, .12 + R() * .1), v: new THREE.Vector3((R() - .25) * .4, R() * .4, R() * .3), s: (i % 3 ? .03 : .065) + R() * .03, r0: R() * 6, spin: (R() - .5) * 7 }); }
+  const puffs = []; for (let i = 0; i < 9; i++) { const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.dust, transparent: true, depthWrite: false })); m.renderOrder = 5; g.add(m);
+    puffs.push({ m, p0: new THREE.Vector3(toX(CRACK.x + 40) + (R() - .5) * .2, toY(CRACK.y + 80) + (R() - .5) * .15, .13), v: new THREE.Vector3((R() - .5) * .15, R() * .08, .05) }); }
+  // pop-up shadow-puppet stage
+  const stageSh = plane(T.shadow, 1.08, .8, 8); stageSh.position.set(.02, 0, .196); g.add(stageSh);
+  const flip = new THREE.Group(); flip.position.set(0, -.3, .26); g.add(flip);
+  const card = new THREE.Group(); card.position.set(0, .33, 0); flip.add(card);
+  const back = plane(T.stage, .94, .66, 10); card.add(back);
+  const con = plane(T.cWalk, .2, .3, 11), off = plane(T.oIdle, .3, .3, 11); off.position.set(.2, -.105, .003);
+  const envM = plane(T.env, .075, .048, 12), bub1 = plane(T.bChai, .3, .134, 13), bub2 = plane(T.bPass, .3, .134, 13);
+  bub1.position.set(-.2, .15, .006); bub2.position.set(.19, .15, .006);
+  const sRed = plane(T.sRed, .17, .17, 14), sGr = plane(T.sGreen, .17, .17, 14); sRed.position.set(0, .14, .008); sGr.position.set(0, .14, .008);
+  const bags = [0, 1, 2].map(i => { const b = plane(T.bag, .1, .133, 12); b.geometry.translate(0, .066, 0); b.position.set(-.17 + i * .13, -.255, .006); return b; });
+  const minus = plane(T.minus, .15, .07, 14), skip = plane(T.skip, .3, .09, 14); minus.position.set(.11, 0, .008); skip.position.set(-.02, .15, .008);
   card.add(con, off, envM, bub1, bub2, sRed, sGr, minus, skip, ...bags);
-  [con, off, envM, bub1, bub2, sRed, sGr, minus, skip, ...bags].forEach(m => m.position.z += 0.003);
-
-  return { root, g, layers: { head, cut, front }, te, pivot, poses, beam, beamGlow, teGlow, stampG, dim, parts, puffs, flip, card, con, off, envM, bub1, bub2, sRed, sGr, bags, minus, skip, shake: 0 };
+  // things that float in front of the poster
+  const fl = new THREE.Group(); g.add(fl);
+  const scrim = plane(T.scrim, 1.5, 1.1, 19); scrim.position.z = .3; g.add(scrim);
+  const lines = {}; ["lYatri", "lYou", "lPrice", "lPrice2", "w1", "w2", "w3", "lStand"].forEach(k => lines[k] = floating(T[k], .9, 21, fl, false));
+  const years = { y2019: floating(T.y2019, .78, 23, fl), y2026: floating(T.y2026, .78, 23, fl) };
+  const news = { n1: floating(T.n1, .98, 22, fl), n2: floating(T.n2, .98, 22, fl), n3: floating(T.n3, .98, 22, fl) };
+  const ticker = plane(T.ticker, 1.0, .035, 22); ticker.position.set(0, -.64, .34); g.add(ticker); T.ticker.repeat.x = .5;
+  const stat = plane(T.stat, 1.02, 1.52, 29); stat.position.z = .44; g.add(stat);
+  const end = floating(T.end, .9, 25, fl);
+  const vhs = plane(T.vhs, 1.04, 1.54, 30); vhs.position.z = .45; g.add(vhs);
+  const band = plane(T.band, 1.04, .09, 31); band.material.blending = THREE.AdditiveBlending; band.position.z = .451; g.add(band);
+  const rw = plane(T.rw, .5, .125, 32); rw.position.set(-.2, .66, .452); g.add(rw);
+  return { root, g, head, cutL, cutR, cutRPivot, front, nahi, nahiHome, strike, te, pivot, poses, beam, beamGlow, teGlow, stampG, dim, parts, puffs,
+    stageSh, flip, con, off, envM, bub1, bub2, sRed, sGr, bags, minus, skip, scrim, lines, years, news, ticker, stat, end, vhs, band, rw };
 }
 
-/* ================= the story (timeline) ================= */
-function story(S) {
-  const cues = [], spans = []; let t = -0.001;
-  const at = (time, f) => cues.push({ time, f }), span = (a, b, f) => spans.push({ a, b, f, done: false });
-  const op = (m, v) => { m.material.opacity = v; m.visible = v > 0.002; };
-  let curDepth = 0;
-  const pose = (from, to, k) => { S.pivot.position.lerpVectors(from.pos, to.pos, k); S.pivot.position.z += .055 * curDepth; S.pivot.rotation.z = lerp(from.rot, to.rot, k); S.pivot.scale.setScalar(lerp(from.s, to.s, k)); };
-  const depth = k => { curDepth = k; S.layers.head.position.z = .05 * k; S.pivot.position.z = .055 * k; S.layers.cut.position.z = .11 * k; S.layers.front.position.z = .18 * k; S.stampG.position.z = .19 * k; S.beam.position.z = .115 * k; S.beamGlow.position.z = .112 * k; S.teGlow.position.z = .04 * k; S.dim.position.z = .2 * k; };
-  const slam = (m, k, big = 2) => { op(m, clamp01(k * 3)); m.scale.setScalar(1 + (1 - E.out(k)) * big); };
-  const hand = { x: -0.133, y: -0.08 }, take = { x: 0.106, y: -0.2 };
-  const burst = () => S.parts.forEach((p, i) => { p.on = true; op(p.m, 1);
-    p.m.position.set(toX(CRACK.x) + (Math.random() - .3) * .14, toY(CRACK.y) + (Math.random() - .5) * .1, .12 + Math.random() * .1);
-    p.v.set((Math.random() - .25) * .4, Math.random() * .4, Math.random() * .3); const s = (i % 3 ? .03 : .065) + Math.random() * .03; p.m.scale.set(s, s, s);
-    p.m.material.rotation = Math.random() * 6; p.spin = (Math.random() - .5) * 7; });
-  const dust = () => S.puffs.forEach(d => { d.age = 0; d.m.position.set(toX(CRACK.x + 40) + (Math.random() - .5) * .2, toY(CRACK.y + 80) + (Math.random() - .5) * .15, .13); d.v.set((Math.random() - .5) * .15, Math.random() * .08, .05); });
+/* ============ the story — a pure function of time, so it can truly play backwards ============ */
+const D = 12.6, LA = 51.6, RWD = 4.8, LB = 44.0;   // the moment of the offer · end of the bribe story · rewind length · end of the honest story
+function makeStory(S) {
+  const spans = [], cues = [];
+  const at = (a, f, br) => spans.push({ a, b: a, f, br });
+  const span = (a, b, f, br) => spans.push({ a, b, f, br });
+  const cue = (time, f, br) => cues.push({ time, f, br });
+  const op = (m, v) => { m.material.opacity = v; m.visible = v > .003; };
+  const V = {};
+  const hand = { x: -.133, y: -.08 }, take = { x: .106, y: -.2 };
+  const slam = (m, a, big = 2, br) => span(a, a + .32, k => { op(m, clamp01(k * 3)); m.scale.setScalar(1 + (1 - E.out(k)) * big); }, br);
+  const life = (k, a, b, fin = .7, fout = .6) => { const t = k * (b - a); return [clamp01(t / fin), clamp01((b - a - t) / fout)]; };
+  /* one narration line at a time: a soft dark scrim rises, the words drift forward out of the poster */
+  const line = (m, a, b, br, y = -.3, scrim = .85) => span(a, b, k => { const [i, o] = life(k, a, b, .9, .7), v = Math.min(E.out(i), o);
+    op(m, v); m.position.set(0, y + (1 - E.out(i)) * -.03, .36 + E.out(i) * .05); m.scale.setScalar(.96 + .04 * E.out(i)); V.scrim = Math.max(V.scrim, v * scrim); V.scrimY = y; }, br);
+  const bubble = (m, map, a, b, br) => span(a, b, k => { const [i, o] = life(k, a, b, .3, .35); m.material.map = map; op(m, Math.min(i * 1.5, o)); m.scale.setScalar(1 + (1 - E.back(i)) * .5); }, br);
+  const yearCard = (m, a, b, br) => span(a, b, k => { const [i, o] = life(k, a, b, .35, .55);
+    op(m, Math.min(clamp01(i * 3), o)); m.scale.setScalar(1 + (1 - E.out(i)) * 1.4); m.position.set(0, .14, .38 + (1 - o) * .25); m.rotation.z = -.04;
+    const sh = m.userData.sh; op(sh, Math.min(i, o) * .45); sh.position.set(.03, .1, .2); sh.scale.setScalar(m.scale.x); }, br);
+  const lowerThird = (m, a, b) => span(a, b, k => { const [i, o] = life(k, a, b, .45, .4), e = E.out(i);
+    op(m, Math.min(i * 2, o)); m.position.set(lerp(-1.1, 0, e), -.46, .34); const sh = m.userData.sh; op(sh, Math.min(i, o) * .4); sh.position.set(m.position.x + .02, -.49, .2); V.news = 1; }, "A");
+  const walk = (k, x0, x1) => { S.con.position.x = lerp(x0, x1, k); S.con.position.y = -.105 + Math.abs(Math.sin(k * Math.PI * 5)) * .012; S.con.rotation.z = Math.sin(k * Math.PI * 5) * .04; };
+  const flipTo = (k, up) => { V.flip = up ? lerp(Math.PI / 2, 0, E.back(k)) : lerp(0, Math.PI / 2, E.in(k)); };
+  const envAt = (x, y, rot = 0) => { op(S.envM, 1); S.envM.position.set(x, y, .006); S.envM.rotation.z = rot; };
 
-  function init() {
-    t = -0.001; spans.forEach(s => s.done = false);
-    depth(0); pose(S.poses.print, S.poses.print, 0); op(S.te, 1);
-    S.beam.scale.x = 0.0001; op(S.beam, 0); op(S.beamGlow, 0); op(S.teGlow, 0); op(S.stampG, 0); op(S.dim, 0);
-    S.parts.forEach(p => { p.on = false; op(p.m, 0); }); S.puffs.forEach(d => { d.age = 9; op(d.m, 0); });
-    S.flip.rotation.x = Math.PI / 2; S.flip.visible = false;
-    S.con.material.map = T.cWalk; S.con.scale.x = 1; S.con.position.set(-0.42, -0.105, 0.003); op(S.con, 0);
+  /* ---------- shared: 2019, the offer ---------- */
+  span(0, .9, k => V.dHead = E.back(k)); span(.3, 1.2, k => V.dTe = E.back(k)); span(.6, 1.5, k => V.dCut = E.back(k)); span(.9, 1.8, k => V.dFront = E.back(k));
+  yearCard(S.years.y2019, 2.2, 5.0);
+  span(5.5, 6.3, k => flipTo(k, true));
+  span(6.8, 9.0, k => { op(S.con, clamp01(k * 4)); walk(E.out(k), -.42, -.22); });
+  at(9.4, () => { S.con.material.map = T.cOffer; S.con.rotation.z = 0; envAt(hand.x, hand.y); });
+  bubble(S.bub1, T.bChai, 9.7, 12.3);
+  cue(2.2, () => SFX.dha()); cue(5.5, () => { SFX.whoosh(); droneOn(); }); [7.0, 7.5, 8.0, 8.5].forEach(c => cue(c, SFX.step)); cue(9.4, () => SFX.na());
+
+  /* ---------- branch A: the bribe ---------- */
+  const A = "A";
+  span(D, D + .7, k => { const e = E.io(k); envAt(lerp(hand.x, take.x, e), lerp(hand.y, take.y, e) + Math.sin(e * Math.PI) * .07, e * .6); }, A);
+  at(D + .35, () => { S.off.material.map = T.oTake; }, A);
+  at(D + .9, () => { op(S.envM, 0); S.off.material.map = T.oStamp; S.con.material.map = T.cWalk; }, A);
+  at(14.3, () => { S.off.material.map = T.oIdle; }, A);
+  slam(S.sRed, 14.3, 2, A); bubble(S.bub2, T.bPass, 14.5, 16.8, A);
+  span(17.2, 17.7, k => { V.charFade = k; V.sRedFade = k; }, A);
+  [0, 1, 2].forEach(i => span(17.9 + i * .45, 18.3 + i * .45, k => { op(S.bags[i], clamp01(k * 3)); S.bags[i].scale.set(1, E.back(k), 1); }, A));
+  span(19.6, 20.4, k => S.bags[2].scale.set(1 + k * .08, lerp(1, .58, E.out(k)), 1), A); slam(S.minus, 19.8, 1, A);
+  slam(S.skip, 21.0, 1.5, A);
+  span(22.6, 23.3, k => flipTo(k, false), A);
+  yearCard(S.years.y2026, 23.8, 26.6, A);
+  line(S.lines.lYatri, 27.0, 29.4, A); line(S.lines.lYou, 29.6, 32.0, A);
+  span(32.2, 34.4, k => V.shake = .004 + k * k * .02, A);
+  span(34.2, 35.3, k => V.lean = E.in(k) * .14, A); span(35.3, 36.1, k => V.lean = .14 + Math.sin(k * Math.PI * 2.5) * .025 * (1 - k), A);
+  span(34.4, 35.8, k => { V.tePose = ["print", "fallen", E.in(k)]; V.teOp = 1 - clamp01((k - .7) / .3); }, A);
+  span(34.4, 35.1, k => V.shake = .026 * (1 - k), A);
+  // the news cycle
+  span(36.6, 36.95, k => V.stat = Math.sin(k * Math.PI) * .85, A);
+  lowerThird(S.news.n1, 36.9, 39.8); lowerThird(S.news.n2, 40.0, 42.6); lowerThird(S.news.n3, 42.8, 45.4);
+  span(36.9, 45.4, k => V.tick = k, A);
+  span(45.4, 45.7, k => V.stat = Math.sin(k * Math.PI) * .6, A);
+  cue(D + .35, () => { SFX.clink(); SFX.clink(.09); SFX.clink(.19); }, A); cue(14.3, SFX.thunk, A);
+  [17.9, 18.35, 18.8].forEach(c => cue(c, SFX.pop, A)); cue(19.6, SFX.deflate, A); cue(21.0, SFX.thunk, A);
+  cue(22.6, () => { SFX.whoosh(); droneOff(); }, A); cue(23.8, () => SFX.dha(), A); cue(27.0, SFX.honk, A);
+  cue(32.2, () => SFX.rumble(2.2), A); cue(33.8, SFX.crack, A); cue(34.4, SFX.crash, A);
+  cue(36.6, SFX.static, A); cue(36.9, SFX.sting, A); cue(40.0, SFX.blip, A); cue(42.8, SFX.blip, A); cue(45.4, SFX.static, A);
+  // silence after the noise
+  line(S.lines.lPrice, 46.0, 48.4, A, -.1, .9); line(S.lines.lPrice2, 48.8, 51.4, A, -.1, .9);
+  cue(48.8, SFX.heart, A); cue(50.0, SFX.heart, A);
+  // (the rewind begins at LA)
+
+  /* ---------- branch B: the pause, the question, one 'no' ---------- */
+  const B = "B";
+  line(S.lines.w1, D + .4, 15.4, B, .02, .92);
+  line(S.lines.w2, 15.9, 19.4, B, .02, .92);
+  line(S.lines.w3, 19.9, 22.6, B, .02, .92);
+  at(23.2, () => { S.off.material.map = T.oNo; }, B);
+  bubble(S.bub2, T.bNo, 23.3, 25.8, B);
+  span(26.0, 26.6, k => { const e = E.io(k); envAt(lerp(hand.x, hand.x - .06, e), hand.y + Math.sin(e * Math.PI) * .05); }, B);
+  at(26.7, () => { S.con.material.map = T.cWalk; S.con.scale.x = -1; op(S.envM, 0); }, B);
+  bubble(S.bub1, T.bOops, 26.8, 28.0, B);
+  span(28.2, 29.3, k => { walk(E.in(k), -.22, -.5); V.conOut = clamp01((k - .5) * 2); }, B);
+  slam(S.sGr, 29.7, 2, B);
+  span(31.2, 31.9, k => flipTo(k, false), B);
+  span(32.5, 34.1, k => { V.beam = E.out(k); V.beamGlow = Math.sin(k * Math.PI) * .9; }, B);
+  span(34.6, 35.9, k => { V.tePose = ["print", "rest", E.back(k)]; V.teGlow = Math.sin(k * Math.PI); }, B);
+  slam(S.stampG, 36.5, 1.6, B);
+  span(37.6, 38.0, k => { op(S.strike, 1); S.strike.scale.x = Math.max(.0001, E.out(k)); }, B);
+  span(38.2, 38.55, k => V.nahiWob = Math.sin(k * Math.PI * 2) * .05, B);
+  span(38.8, 39.8, k => V.nahiFall = k, B);
+  line(S.lines.lStand, 40.4, 43.4, B, -.44, .7);
+  span(LB, LB + 1.0, k => { const e = E.out(k); op(S.end, clamp01(k * 2)); S.end.position.set(0, lerp(-1.4, -.24, e), .37); S.end.rotation.z = lerp(.35, -.025, e);
+    const sh = S.end.userData.sh; op(sh, .45 * k); sh.position.set(.025, S.end.position.y - .035, .2); sh.rotation.z = S.end.rotation.z; }, B);
+  cue(D + .4, () => SFX.bell(294), B); cue(15.9, () => SFX.bell(330), B); cue(19.9, () => SFX.bell(392), B);
+  cue(23.2, () => { SFX.dha(); SFX.dha(.18); }, B); cue(26.0, () => SFX.whoosh(.15), B); cue(26.8, () => SFX.na(), B);
+  cue(29.7, SFX.thunk, B); cue(31.2, () => { SFX.whoosh(); droneOff(); }, B); cue(32.5, () => SFX.chime(), B); cue(34.6, () => SFX.whoosh(.2), B);
+  cue(36.5, () => { SFX.thunk(); SFX.chime(.15); }, B); cue(37.6, SFX.marker, B); cue(38.8, () => { SFX.peel(); SFX.whoosh(); }, B); cue(LB, () => SFX.whoosh(.2), B);
+
+  /* draw the poster at story time t on branch br */
+  function render(t, br, vhs) {
+    Object.assign(V, { dHead: 0, dTe: 0, dCut: 0, dFront: 0, flip: Math.PI / 2, shake: 0, lean: 0, tePose: ["print", "print", 0], teOp: 1, teGlow: 0, beam: 0, beamGlow: 0,
+      charFade: 0, sRedFade: 0, conOut: 0, nahiWob: 0, nahiFall: 0, scrim: 0, scrimY: 0, stat: 0, tick: -1, news: 0 });
+    S.con.material.map = T.cWalk; S.con.scale.x = 1; S.con.position.set(-.42, -.105, .003); S.con.rotation.z = 0; op(S.con, 0);
     S.off.material.map = T.oIdle; op(S.off, 1);
-    [S.envM, S.bub1, S.bub2, S.sRed, S.sGr, S.minus, S.skip, ...S.bags].forEach(m => op(m, 0));
-    S.bub1.position.set(-0.2, 0.15, .003); S.bub2.position.set(0.19, 0.15, .003);
-    S.shake = 0; cap(null); show($("end"), false); show($("rw"), false);
+    [S.envM, S.bub1, S.bub2, S.sRed, S.sGr, S.minus, S.skip, S.stampG, S.strike, S.end, ...S.bags, ...Object.values(S.lines), ...Object.values(S.years), ...Object.values(S.news)]
+      .forEach(m => { op(m, 0); m.scale.setScalar(1); m.userData.sh && op(m.userData.sh, 0); });
+    S.bags.forEach(b => b.scale.set(1, 1, 1)); S.strike.scale.x = .0001;
+    for (const s of spans) { if (s.br && s.br !== br) continue; if (t < s.a) continue; s.f(s.b > s.a ? clamp01((t - s.a) / (s.b - s.a)) : 1); }
+    S.head.position.z = .05 * V.dHead; S.cutL.position.z = .11 * V.dCut; S.cutRPivot.position.z = .11 * V.dCut + V.lean * .1; S.cutRPivot.rotation.z = V.lean; S.front.position.z = .18 * V.dFront;
+    S.stampG.position.z = .19 * V.dFront; S.beam.position.z = .115 * V.dCut; S.beamGlow.position.z = .112 * V.dCut; S.teGlow.position.z = .04 * V.dCut; S.dim.position.z = .2 * V.dFront;
+    const [pa, pb, pk] = V.tePose, P0 = S.poses[pa], P1 = S.poses[pb];
+    S.pivot.position.lerpVectors(P0.pos, P1.pos, pk); S.pivot.position.z += .055 * V.dTe; S.pivot.rotation.z = lerp(P0.rot, P1.rot, pk); S.pivot.scale.setScalar(lerp(P0.s, P1.s, pk)); op(S.te, V.teOp);
+    op(S.teGlow, V.teGlow); op(S.beam, V.beam > 0 ? 1 : 0); S.beam.scale.x = Math.max(.0001, V.beam); op(S.beamGlow, V.beamGlow);
+    const nf = E.in(V.nahiFall); S.nahi.position.set(S.nahiHome.x + nf * .18, S.nahiHome.y - nf * 1.7, .051 * V.dHead + nf * .15); S.nahi.rotation.z = V.nahiWob - nf * 1.2; op(S.nahi, 1 - clamp01((V.nahiFall - .65) / .35));
+    S.flip.rotation.x = V.flip; S.flip.visible = V.flip < Math.PI / 2 - .01; const up = clamp01(1 - V.flip / (Math.PI / 2)); op(S.dim, .62 * up); op(S.stageSh, .45 * up); S.stageSh.scale.set(1, up, 1); S.stageSh.position.y = -.3 + .33 * up;
+    const cf = 1 - V.charFade * .85; S.off.material.opacity *= cf; S.con.material.opacity *= cf * (1 - V.conOut); S.sRed.material.opacity *= 1 - V.sRedFade;
+    op(S.scrim, V.scrim); S.scrim.position.y = V.scrimY;
+    op(S.stat, V.stat); if (V.stat > 0) T.stat.offset.set(Math.random(), Math.random());
+    op(S.ticker, V.tick >= 0 && V.tick < 1 ? Math.min(1, V.tick * 30, (1 - V.tick) * 30) : 0); if (V.tick >= 0) T.ticker.offset.x = t * .06;
+    const tb = br === "A" ? t - 34.4 : -1;   // debris & dust are closed-form in time, so they fly back up on rewind
+    S.parts.forEach(p => { if (tb < 0 || tb > 3) { op(p.m, 0); return; } p.m.position.set(p.p0.x + p.v.x * tb, p.p0.y + p.v.y * tb - .85 * tb * tb, p.p0.z + p.v.z * tb);
+      op(p.m, p.m.position.y > -1.5 ? 1 : 0); p.m.scale.setScalar(p.s); p.m.material.rotation = p.r0 + p.spin * tb; });
+    S.puffs.forEach(d => { if (tb < 0 || tb > 2.4) { op(d.m, 0); return; } d.m.position.copy(d.p0).addScaledVector(d.v, tb); d.m.scale.setScalar(.08 + tb * .22); op(d.m, .8 * (1 - tb / 2.4)); });
+    const j = V.shake + (vhs ? .006 : 0); S.g.position.set((Math.random() - .5) * j, (Math.random() - .5) * j * (vhs ? .3 : 1), 0);
+    const tv = vhs ? .95 : V.news ? .35 : 0; op(S.vhs, tv); op(S.band, vhs ? .55 : 0); op(S.rw, vhs ? (Math.sin(performance.now() / 90) > -.3 ? 1 : .2) : 0);
+    if (tv) T.vhs.offset.y = (performance.now() / 700) % 1; if (vhs) S.band.position.y = .75 - ((performance.now() / 900) % 1) * 1.5;
   }
-  const flipUp = k => { S.flip.visible = true; S.flip.rotation.x = lerp(Math.PI / 2, 0, E.back(k)); op(S.dim, .62 * k); };
-  const flipDown = k => { S.flip.rotation.x = lerp(0, Math.PI / 2, E.in(k)); op(S.dim, .62 * (1 - k)); if (k >= 1) S.flip.visible = false; };
-  const walkIn = (k, x0, x1) => { S.con.position.x = lerp(x0, x1, k); S.con.position.y = -0.105 + Math.abs(Math.sin(k * Math.PI * 5)) * 0.012; S.con.rotation.z = Math.sin(k * Math.PI * 5) * .04; };
 
-  // --- act 1 · 2019: the deal ---
-  span(0, .8, k => depth(E.back(k)));
-  at(.75, () => { year("२०१९", "पुल का ठेका"); SFX.dha(); SFX.whoosh(); });
-  span(.95, 1.55, flipUp);
-  at(1.0, () => { droneOn(); cap("<em>२०१९।</em> नए पुल का ठेका।", "2019. A contract for a new bridge."); });
-  span(1.5, 3.1, k => { op(S.con, clamp01(k * 4)); walkIn(E.out(k), -0.42, -0.22); });
-  [1.6, 1.95, 2.3, 2.65].forEach(d => at(d, () => SFX.step()));
-  at(3.15, () => { S.con.material.map = T.cOffer; S.con.rotation.z = 0; op(S.envM, 1); S.envM.position.set(hand.x, hand.y, .006); SFX.na(); });
-  span(3.2, 3.5, k => slam(S.bub1, k, .6));
-  at(3.25, () => cap("<q>साहब… थोड़ा <em>चाय-पानी</em>?</q>", "“Sir… a little something for tea?”"));
-  span(4.05, 4.6, k => { const e = E.io(k); S.envM.position.set(lerp(hand.x, take.x, e), lerp(hand.y, take.y, e) + Math.sin(e * Math.PI) * .07, .006); S.envM.rotation.z = e * .6; });
-  at(4.4, () => { S.off.material.map = T.oTake; SFX.clink(); SFX.clink(.08); SFX.clink(.17); });
-  at(4.75, () => { op(S.envM, 0); op(S.bub1, 0); S.off.material.map = T.oStamp; S.con.material.map = T.cWalk; });
-  at(5.2, () => { S.off.material.map = T.oIdle; SFX.thunk(); cap("<q>फ़ाइल पास!</q> जाँच की ज़रूरत नहीं।", "“File approved!” No inspection needed."); });
-  span(5.2, 5.5, k => { slam(S.sRed, k); slam(S.bub2, k, .6); });
-  // montage: what the bribe bought
-  span(6.0, 6.3, k => { op(S.con, 1 - k * .8); op(S.off, 1 - k * .8); op(S.sRed, 1 - k); op(S.bub2, 1 - k); });
-  [0, 1, 2].forEach(i => { at(6.1 + i * .18, () => SFX.pop()); span(6.1 + i * .18, 6.4 + i * .18, k => { op(S.bags[i], clamp01(k * 3)); S.bags[i].scale.set(1, E.back(k), 1); }); });
-  at(6.2, () => cap("सीमेंट <em>30% कम</em>। सरिया पतला।", "30% less cement. Thinner steel."));
-  at(6.95, () => SFX.deflate());
-  span(6.95, 7.5, k => { S.bags[2].scale.set(1 + k * .08, lerp(1, .58, E.out(k)), 1); slam(S.minus, k, 1); });
-  at(7.55, () => SFX.thunk());
-  span(7.55, 7.85, k => slam(S.skip, k, 1.5));
-  at(8.3, () => { SFX.whoosh(); droneOff(); });
-  span(8.3, 8.9, flipDown);
-
-  // --- act 2 · 2026: the collapse ---
-  at(8.95, () => { year("२०२६", "सात साल बाद"); SFX.dha(); cap(null); });
-  at(9.6, () => { SFX.honk(); cap("सुबह 9:40। पुल पर एक ऑटो। <em>यात्री: आप।</em>", "9:40 am. An auto on the bridge. The passenger: you."); });
-  at(10.1, () => SFX.rumble(1.9));
-  span(10.1, 12.0, k => { S.shake = .004 + k * k * .02; });
-  at(11.2, () => SFX.crack());
-  at(11.7, () => { SFX.crash(); burst(); dust(); cap(null); });
-  span(11.7, 13.0, k => { pose(S.poses.print, S.poses.fallen, E.in(k)); op(S.te, 1 - clamp01((k - .7) / .3)); });
-  span(12.0, 12.6, k => { S.shake = .024 * (1 - k); });
-  at(13.1, () => SFX.heart());
-  at(13.25, () => cap("₹5,000 की रिश्वत। <em>कीमत: ज़िंदगियाँ।</em>", "A ₹5,000 bribe. The price: lives."));
-  at(14.0, () => SFX.heart());
-
-  // --- act 3 · rewind: one 'no' ---
-  at(15.0, () => { show($("rw"), true); SFX.rewind(); cap("अगर उस दिन किसी ने <em>‘ना’</em> कहा होता…", "What if someone had said no that day…"); });
-  span(15.0, 16.0, k => { pose(S.poses.fallen, S.poses.print, E.io(k)); op(S.te, clamp01(k * 2)); S.parts.forEach(p => op(p.m, p.m.material.opacity * .9)); });
-  at(16.05, () => { show($("rw"), false); S.con.material.map = T.cOffer; S.con.scale.x = 1; S.con.position.set(-0.22, -0.105, .003); S.con.rotation.z = 0; op(S.con, 1); op(S.off, 1);
-    S.off.material.map = T.oIdle; [S.sRed, S.minus, S.skip, ...S.bags].forEach(m => op(m, 0)); op(S.envM, 1); S.envM.position.set(hand.x, hand.y, .006); S.envM.rotation.z = 0; SFX.whoosh(); droneOn(); });
-  span(16.05, 16.6, flipUp);
-  span(16.7, 17.0, k => slam(S.bub1, k, .6));
-  at(17.55, () => { S.off.material.map = T.oNo; S.bub2.material.map = T.bNo; op(S.bub1, 0); SFX.dha(); SFX.dha(.16); });
-  span(17.55, 17.85, k => slam(S.bub2, k, .8));
-  at(17.6, () => cap("<q>ना। काम <em>नियम से</em> होगा।</q>", "“No. It will be done by the rules.”"));
-  span(18.3, 18.75, k => { const e = E.io(k); S.envM.position.set(lerp(hand.x, hand.x - .05, e), hand.y + Math.sin(e * Math.PI) * .04, .006); });
-  at(18.8, () => { S.con.material.map = T.cWalk; S.con.scale.x = -1; op(S.envM, 0); S.bub1.material.map = T.bOops; });
-  span(18.8, 19.05, k => slam(S.bub1, k, .5));
-  span(19.1, 19.9, k => { walkIn(E.in(k), -0.22, -0.5); op(S.con, 1 - clamp01((k - .5) * 2)); op(S.bub1, 1 - k); });
-  at(19.1, () => SFX.thunk());
-  span(19.1, 19.4, k => slam(S.sGr, k));
-  at(20.1, () => { SFX.whoosh(); droneOff(); });
-  span(20.1, 20.65, flipDown);
-
-  // --- act 4 · the bridge stands ---
-  at(20.7, () => { SFX.chime(); cap("<em>सत्यनिष्ठा</em> की नींव पर पुल टिकते हैं।", "Bridges stand on probity."); });
-  span(20.7, 21.9, k => { op(S.beam, 1); S.beam.scale.x = Math.max(.0001, E.out(k)); op(S.beamGlow, Math.sin(k * Math.PI) * .9); });
-  span(21.3, 22.5, k => { pose(S.poses.print, S.poses.rest, E.back(k)); op(S.teGlow, Math.sin(k * Math.PI)); });
-  at(22.45, () => { SFX.thunk(); SFX.chime(.15); });
-  span(22.45, 22.75, k => slam(S.stampG, k, 1.6));
-  at(24.0, () => { cap(null); torn($("sheet"), 31); $("sheet").style.clipPath = ""; show($("end"), true); });
-
-  init();
+  /* master clock: forward on A → true rewind → forward on B → end */
+  let m = 0, last = -1, br = "A", phase = "A", t = 0, rwFrom = 0, bFrom = 0;
+  function reset() { m = 0; last = -1; br = "A"; phase = "A"; t = 0; droneOff(); render(0, "A", false); }
+  reset();
   return {
-    init, get t() { return t; },
+    get ended() { return phase === "B" && t > LB + 1.2; }, get t() { return m; }, reset,
     tick(dt) {
-      const t0 = t, t1 = t + dt; t = t1;
-      for (const c of cues) if (c.time > t0 && c.time <= t1) c.f();
-      for (const s of spans) if (!s.done && t1 >= s.a) { const k = clamp01((t1 - s.a) / (s.b - s.a)); s.f(k); if (k >= 1) s.done = true; }
-      // physics
-      S.parts.forEach(p => { if (!p.on) return; p.v.y -= 1.7 * dt; p.m.position.addScaledVector(p.v, dt); p.m.material.rotation += p.spin * dt; if (p.m.position.y < -1.5) { p.on = false; op(p.m, 0); } });
-      S.puffs.forEach(d => { if (d.age > 2) return; d.age += dt; d.m.position.addScaledVector(d.v, dt); const s = .08 + d.age * .22; d.m.scale.set(s, s, s); op(d.m, Math.max(0, .8 * (1 - d.age / 2))); });
-      S.g.position.set((Math.random() - .5) * S.shake, (Math.random() - .5) * S.shake, 0);
+      m += dt; let vhs = false;
+      if (phase === "A") { t = m; if (t >= LA) { phase = "R"; rwFrom = m; SFX.rewind(RWD); } }
+      if (phase === "R") { const r = clamp01((m - rwFrom) / RWD); t = lerp(LA, D, E.io(r)); vhs = r < 1;
+        if (r >= 1) { phase = "B"; br = "B"; bFrom = m; last = D; SFX.stop(); droneOn(); } }
+      if (phase === "B") t = D + (m - bFrom);
+      if (phase !== "R") { for (const c of cues) if ((!c.br || c.br === br) && c.time > last && c.time <= t) c.f(); last = t; }
+      render(t, br, vhs);
     },
   };
 }
 
-/* ================= boot: camera first, everything in parallel ================= */
+/* ============ boot: camera first, everything else in parallel ============ */
 const assets = loadAll();
-let run = null, stop = null, flatTimer = null;
+let story = null, flatTimer = null, stopAR = null;
+addEventListener("pointerdown", () => { unlock(); if (story && story.ended) story.reset(); }, { passive: true });
 
 async function startAR() {
   show($("scan"), true);
   let MindARThree;
   try { ({ MindARThree } = await import("mindar-image-three")); } catch (e) { return startFlat(); }
-  const mind = new MindARThree({ container: $("stage"), imageTargetSrc: "assets/targets.mind", uiLoading: "no", uiScanning: "no", uiError: "no", filterMinCF: 0.0001, filterBeta: 0.001, warmupTolerance: 2, missTolerance: 6 });
-  const { renderer, scene, camera } = mind;
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  const anchor = mind.addAnchor(0);
-  let visible = false;
+  const mind = new MindARThree({ container: $("stage"), imageTargetSrc: "assets/targets.mind", uiLoading: "no", uiScanning: "no", uiError: "no", filterMinCF: .0001, filterBeta: .001, warmupTolerance: 2, missTolerance: 6 });
+  const { renderer, scene, camera } = mind; renderer.outputColorSpace = THREE.SRGBColorSpace;
+  const anchor = mind.addAnchor(0); let visible = false;
   anchor.onTargetFound = () => { visible = true; show($("scan"), false); show($("flatLink"), false); clearTimeout(flatTimer); };
-  anchor.onTargetLost = () => { visible = false; if (!$("end").classList.contains("hidden")) return; show($("scan"), true); };
+  anchor.onTargetLost = () => { visible = false; show($("scan"), true); };
   try { await mind.start(); } catch (e) { $("stage").innerHTML = ""; return startFlat(); }
   flatTimer = setTimeout(() => { if (!visible) show($("flatLink"), true); }, 9000);
-  const T = await assets, S = build(), st = story(S);
-  anchor.group.add(S.root);
-  run = st; const clock = new THREE.Clock();
-  renderer.setAnimationLoop(() => { const dt = Math.min(clock.getDelta(), .05); S.root.visible = visible; if (visible) st.tick(dt); renderer.render(scene, camera); });
-  stop = () => { renderer.setAnimationLoop(null); mind.stop(); $("stage").innerHTML = ""; };
+  await assets; const S = build(); story = makeStory(S); anchor.group.add(S.root);
+  const clock = new THREE.Clock();
+  renderer.setAnimationLoop(() => { const dt = Math.min(clock.getDelta(), .05); S.root.visible = visible; if (visible) story.tick(dt); renderer.render(scene, camera); });
+  stopAR = () => { renderer.setAnimationLoop(null); mind.stop(); $("stage").innerHTML = ""; };
 }
-
 async function startFlat() {
-  if (stop) { stop(); stop = null; }
+  if (stopAR) { stopAR(); stopAR = null; } droneOff();
   clearTimeout(flatTimer); show($("scan"), false); show($("flatLink"), false); document.body.classList.add("flat");
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.outputColorSpace = THREE.SRGBColorSpace; $("stage").appendChild(renderer.domElement);
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.outputColorSpace = THREE.SRGBColorSpace; $("stage").appendChild(renderer.domElement);
   const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(36, 1, .05, 50);
-  const fit = () => { const a = innerWidth / innerHeight, f = THREE.MathUtils.degToRad(18); cam.aspect = a; cam.position.set(0, -0.05, Math.max(.9 / Math.tan(f), .62 / (Math.tan(f) * a)) * 1.04); cam.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); };
+  const fit = () => { const a = innerWidth / innerHeight, f = THREE.MathUtils.degToRad(18); cam.aspect = a; cam.position.set(0, -.04, Math.max(.9 / Math.tan(f), .62 / (Math.tan(f) * a)) * 1.04); cam.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); };
   fit(); addEventListener("resize", fit);
-  await assets; const S = build(), st = story(S); scene.add(S.root); run = st;
+  await assets; const S = build(); story = makeStory(S); scene.add(S.root);
   const clock = new THREE.Clock(); let time = 0;
-  renderer.setAnimationLoop(() => { const dt = Math.min(clock.getDelta(), .05); time += dt;
-    S.root.rotation.y = Math.sin(time * .5) * .16; S.root.rotation.x = Math.sin(time * .37) * .06; st.tick(dt); renderer.render(scene, cam); });
+  renderer.setAnimationLoop(() => { const dt = Math.min(clock.getDelta(), .05); time += dt; S.root.rotation.y = Math.sin(time * .4) * .16; S.root.rotation.x = Math.sin(time * .3) * .06; story.tick(dt); renderer.render(scene, cam); });
 }
-
-window.__storyTime = () => run ? run.t : -1;
-$("again").onclick = () => { unlock(); run && run.init(); };
+window.__storyTime = () => story ? story.t : -1;
 $("flatLink").onclick = () => { unlock(); startFlat(); };
 if (new URLSearchParams(location.search).has("flat")) startFlat(); else startAR();
 </script>
