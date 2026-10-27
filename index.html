@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>पुल नहीं टिकते · Probity AR</title>
+<meta name="description" content="Point your phone at the poster and watch the bridge, and the headline, collapse. Vigilance Awareness Week 2026 · सत्यनिष्ठा से समृद्धि.">
+<meta property="og:title" content="पुल नहीं टिकते। · Probity AR">
+<meta property="og:description" content="कमीशन की नींव पर पुल नहीं टिकते। An AR poster for Vigilance Awareness Week 2026.">
+<meta property="og:image" content="assets/poster.jpg">
+<meta name="theme-color" content="#141414">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anek+Devanagari:wdth,wght@75..125,100..800&family=Mukta:wght@500;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+} }
+</script>
+<style>
+  :root { --paper: #ede3d1; --ink: #141414; --red: #c8102e; --muted: #6b6255; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--paper); color: var(--ink); font-family: 'Mukta', sans-serif; }
+  body { background: radial-gradient(ellipse at 50% 40%, #f4ecdd 0%, #e2d5bd 70%, #cdbd9f 100%); }
+  .mono { font-family: 'Space Mono', monospace; }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; }
+  #stage video { object-fit: cover; }
+  .grain { position: fixed; inset: 0; pointer-events: none; opacity: .18; mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  body.ar .grain { display: none; }
+
+  /* HUD */
+  .hud-top { position: fixed; left: 0; right: 0; top: 0; padding: max(14px, env(safe-area-inset-top)) 16px 10px; display: flex; justify-content: space-between; align-items: start; gap: 12px; z-index: 5; pointer-events: none; }
+  .hud-top .meta { font: 700 10.5px/1.5 'Space Mono'; letter-spacing: .08em; }
+  .chip { font: 700 11px 'Space Mono'; letter-spacing: .08em; padding: 5px 10px; background: var(--red); color: #f3e9d6; transition: background .4s; white-space: nowrap; }
+  .chip.ok { background: #1f7a4a; }
+  body.ar .hud-top .meta { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+  .hint { position: fixed; left: 50%; bottom: max(28px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 5; background: var(--ink); color: var(--paper);
+    padding: 10px 16px; font: 700 15px 'Mukta'; white-space: nowrap; transition: opacity .3s; pointer-events: none; }
+  .hint small { display: block; font: 400 10.5px 'Space Mono'; letter-spacing: .06em; opacity: .75; }
+  .hidden { opacity: 0 !important; pointer-events: none !important; }
+
+  .act { position: fixed; left: 50%; bottom: max(28px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 6; transition: opacity .35s, transform .35s; }
+  .act button { font: 800 22px/1 'Mukta'; padding: 16px 26px 14px; background: var(--red); color: #fff; border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); cursor: pointer; white-space: nowrap; }
+  .act button small { display: block; font: 700 10.5px 'Space Mono'; letter-spacing: .08em; margin-top: 6px; opacity: .9; }
+  .act button:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--ink); }
+  .act.hidden { transform: translate(-50%, 20px); }
+
+  .final { position: fixed; left: 16px; right: 16px; bottom: max(20px, env(safe-area-inset-bottom)); z-index: 6; max-width: 460px; margin: 0 auto;
+    background: var(--paper); border: 3px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); padding: 16px 18px 14px; transition: opacity .4s, transform .4s; }
+  .final.hidden { transform: translateY(24px); }
+  .final .k { font: 700 10.5px 'Space Mono'; letter-spacing: .08em; color: var(--muted); }
+  .final .x { font: 800 20px/1.25 'Mukta'; text-decoration: line-through; text-decoration-color: var(--red); text-decoration-thickness: 3px; color: var(--muted); margin-top: 6px; }
+  .final .y { font: 800 40px/.95 'Anek Devanagari'; font-variation-settings: 'wdth' 75; margin: 4px 0 6px; }
+  .final .y b { color: #1f7a4a; }
+  .final .en { font: italic 400 13px 'Space Mono'; }
+  .final .row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .final button, .final a { font: 700 12px 'Space Mono'; letter-spacing: .06em; text-transform: uppercase; padding: 9px 12px; border: 2px solid var(--ink); background: transparent; color: var(--ink); cursor: pointer; text-decoration: none; }
+  .final .tag { margin-top: 10px; padding-top: 8px; border-top: 1.5px solid var(--ink); font: 800 14px 'Mukta'; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .final .tag span { font: 700 10px 'Space Mono'; letter-spacing: .06em; color: var(--red); align-self: center; }
+
+  /* intro */
+  #intro { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 20px 16px; overflow: auto; background: var(--paper); transition: opacity .45s; }
+  #intro .card { width: 100%; max-width: 440px; }
+  #intro .meta { font: 700 10.5px 'Space Mono'; letter-spacing: .08em; display: flex; justify-content: space-between; border-bottom: 1.5px solid var(--ink); padding-bottom: 8px; }
+  #intro .meta span:last-child { color: var(--red); }
+  #intro .lab { display: inline-block; margin-top: 18px; background: var(--red); color: #f3e9d6; font: 800 20px/1.4 'Mukta'; padding: 1px 12px 0; transform: rotate(-1.5deg); }
+  #intro h1 { margin: 18px 0 0; font: 800 clamp(76px, 25vw, 124px)/.82 'Anek Devanagari'; font-variation-settings: 'wdth' 75; letter-spacing: -.01em; }
+  #intro h1 b { color: var(--red); }
+  #intro h1 i { font-style: normal; display: inline-block; transform: rotate(16deg) translateY(.12em); transform-origin: 20% 30%; }
+  #intro p { font: 400 12.5px/1.6 'Space Mono'; margin: 16px 0 20px; text-align: justify; }
+  .btns { display: grid; gap: 12px; }
+  .btns button { display: grid; grid-template-columns: 44px 1fr; align-items: center; text-align: left; gap: 10px; padding: 14px 16px; border: 3px solid var(--ink); background: var(--paper); color: var(--ink); box-shadow: 5px 5px 0 var(--ink); cursor: pointer; font: inherit; }
+  .btns button:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--ink); }
+  .btns button.primary { background: var(--ink); color: var(--paper); box-shadow: 5px 5px 0 var(--red); }
+  .btns .ic { font: 700 26px 'Space Mono'; text-align: center; }
+  .btns b { display: block; font: 800 20px/1.2 'Mukta'; }
+  .btns small { display: block; font: 400 11px 'Space Mono'; letter-spacing: .04em; opacity: .8; }
+  #intro .foot { margin-top: 18px; font: 400 10.5px/1.5 'Space Mono'; color: var(--muted); }
+  #load { position: fixed; inset: 0; z-index: 9; display: grid; place-items: center; background: var(--paper); font: 700 12px 'Space Mono'; letter-spacing: .1em; transition: opacity .4s; }
+  #err { position: fixed; left: 16px; right: 16px; top: 80px; z-index: 12; background: var(--red); color: #fff; padding: 12px 14px; font: 700 14px 'Mukta'; display: none; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div class="grain"></div>
+
+<div class="hud-top hidden" id="hud">
+  <div class="meta">CASE FILE NO. VAW/2026/0417<br>सत्यनिष्ठा से समृद्धि</div>
+  <div class="chip" id="chip">STATUS: COLLAPSED</div>
+</div>
+<div class="hint hidden" id="hint">पोस्टर को फ्रेम में लाओ<small>POINT THE CAMERA AT THE POSTER</small></div>
+<div class="act hidden" id="act"><button id="no">✋ कमीशन को ना कहो<small>SAY NO · TAP TO REBUILD</small></button></div>
+<div class="final hidden" id="final">
+  <div class="k">CASE FILE NO. VAW/2026/0417 · STATUS: STANDING</div>
+  <div class="x">कमीशन की नींव पर पुल नहीं टिकते।</div>
+  <div class="y">सत्यनिष्ठा की नींव पर<br>पुल <b>टिकते</b> हैं।</div>
+  <div class="en">Bridges don't stand on commission. They stand on probity.</div>
+  <div class="row"><button id="again">↺ फिर से देखो</button><button id="switch">3D ↔ AR</button></div>
+  <div class="tag">सत्यनिष्ठा से समृद्धि <span>VIGILANCE AWARENESS WEEK 2026</span></div>
+</div>
+
+<section id="intro">
+  <div class="card">
+    <div class="meta"><span>CASE FILE NO. VAW/2026/0417</span><span>● LIVE</span></div>
+    <div class="lab">कमीशन की नींव पर —</div>
+    <h1>पुल <b>नहीं</b><br>टिक<i>ते।</i></h1>
+    <p>this poster is a crime scene. open it in 3d and watch the headline fall apart with the bridge. then decide what happens next.</p>
+    <div class="btns">
+      <button class="primary" id="goAR"><span class="ic">◉</span><span><b>AR: पोस्टर पर कैमरा</b><small>point your phone at the poster</small></span></button>
+      <button id="go3D"><span class="ic">◇</span><span><b>3D में देखो</b><small>no poster needed · tilt or drag</small></span></button>
+    </div>
+    <div class="foot">The camera feed stays on your phone; nothing is recorded or uploaded. Best on a phone, in Chrome or Safari.</div>
+  </div>
+</section>
+<div id="load" class="hidden">LOADING CASE FILE…</div>
+<div id="err"></div>
+
+<script type="module">
+import * as THREE from "three";
+
+// ---- poster geometry (1024 x 1536 artboard → 1 x 1.5 units) ----
+const PX = 1 / 1024;
+const toX = x => x * PX - 0.5, toY = y => 0.75 - y * PX;
+const TE = { // from assets/layout.json
+  print: { x: 590, y: 599.5, w: 192.25, h: 285, pivot: { x: 628.4, y: 685 }, angle: 19 },
+  rest:  { x: 697, y: 372, w: 230.703125, h: 342 },
+};
+const CRACK = { x: 560, y: 650 }, STAMP = { x: 874, y: 646 };
+
+const $ = id => document.getElementById(id);
+const ui = { intro: $("intro"), load: $("load"), hud: $("hud"), hint: $("hint"), act: $("act"), final: $("final"), chip: $("chip"), err: $("err") };
+const show = (el, on) => el.classList.toggle("hidden", !on);
+const fail = msg => { ui.err.textContent = msg; ui.err.style.display = "block"; };
+
+// ---- textures ----
+const loader = new THREE.TextureLoader();
+const tex = url => new Promise((res, rej) => loader.load(url, t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; res(t); }, undefined, rej));
+let T = null;
+async function loadTextures() {
+  if (T) return T;
+  const [base, head, te, cut, front] = await Promise.all(["assets/base.jpg", "assets/head.webp", "assets/te.webp", "assets/cut.webp", "assets/front.webp"].map(tex));
+  await document.fonts.load("800 80px 'Anek Devanagari'").catch(() => {});
+  return (T = { base, head, te, cut, front });
+}
+
+function canvasTex(w, h, draw) {
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  draw(c.getContext("2d"), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+
+// ---- the diorama: same scene graph for 3D and AR ----
+function buildDiorama() {
+  const g = new THREE.Group();
+  const plane = (map, w = 1, h = 1.5) => new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false }));
+  const base = plane(T.base); base.material.transparent = false; base.material.depthWrite = true;
+  const head = plane(T.head), cut = plane(T.cut), front = plane(T.front);
+  base.renderOrder = 0; head.renderOrder = 1; cut.renderOrder = 3; front.renderOrder = 4;
+  g.add(base, head, cut, front);
+
+  // falling glyph on a pivot
+  const p = TE.print, r = TE.rest;
+  const te = plane(T.te, p.w * PX, p.h * PX); te.renderOrder = 2;
+  const P = new THREE.Vector3(toX(p.pivot.x), toY(p.pivot.y), 0);
+  const C = new THREE.Vector3(toX(p.x + p.w / 2), toY(p.y + p.h / 2), 0);
+  te.position.copy(C).sub(P);
+  const pivot = new THREE.Group(); pivot.add(te); g.add(pivot);
+  const s = r.w / p.w, RC = new THREE.Vector3(toX(r.x + r.w / 2), toY(r.y + r.h / 2), 0);
+  const poses = {
+    print: { pos: P.clone(), rot: -THREE.MathUtils.degToRad(p.angle), scl: 1 },
+    fallen: { pos: P.clone().add(new THREE.Vector3(0.08, -1.25, 0.18)), rot: -THREE.MathUtils.degToRad(p.angle + 95), scl: 1 },
+    rest: { pos: RC.clone().sub(te.position.clone().multiplyScalar(s)), rot: 0, scl: s },
+  };
+
+  // "rejected" stamp that slams over the approval stamp
+  const stampTex = canvasTex(512, 512, (x, w, h) => {
+    x.translate(w / 2, h / 2); x.rotate(-0.22);
+    x.strokeStyle = "#1f7a4a"; x.fillStyle = "#1f7a4a"; x.lineWidth = 14; x.strokeRect(-220, -110, 440, 220);
+    x.lineWidth = 4; x.strokeRect(-200, -92, 400, 184);
+    x.textAlign = "center"; x.font = "800 108px 'Anek Devanagari'"; x.fillText("अस्वीकृत", 0, 30);
+    x.font = "700 30px 'Space Mono', monospace"; x.fillText("NO COMMISSION", 0, 76);
+  });
+  const stamp = plane(stampTex, 0.3, 0.3); stamp.renderOrder = 5; stamp.material.opacity = 0;
+  stamp.position.set(toX(STAMP.x), toY(STAMP.y), 0); g.add(stamp);
+
+  // glow behind the restored glyph
+  const glowTex = canvasTex(256, 256, (x, w) => { const gr = x.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); gr.addColorStop(0, "rgba(255,214,120,.9)"); gr.addColorStop(1, "rgba(255,214,120,0)"); x.fillStyle = gr; x.fillRect(0, 0, w, w); });
+  const glow = plane(glowTex, 0.6, 0.6); glow.position.copy(RC); glow.material.opacity = 0; glow.material.blending = THREE.AdditiveBlending; glow.renderOrder = 1; g.add(glow);
+
+  // debris + ₹ particles
+  const rupee = canvasTex(128, 128, (x) => { x.fillStyle = "#c8102e"; x.font = "800 104px 'Anek Devanagari'"; x.textAlign = "center"; x.fillText("₹", 64, 100); });
+  const chunk = canvasTex(128, 128, (x) => { x.fillStyle = "#3b3833"; x.beginPath(); [[20, 30], [70, 12], [110, 40], [100, 96], [52, 116], [16, 84]].forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.fill(); x.fillStyle = "#6d675d"; x.fillRect(40, 40, 30, 10); });
+  const parts = [];
+  for (let i = 0; i < 26; i++) {
+    const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: i % 3 === 0 ? rupee : chunk, transparent: true, depthWrite: false, opacity: 0 }));
+    m.renderOrder = 6; g.add(m); parts.push({ m, v: new THREE.Vector3(), spin: 0, alive: false });
+  }
+
+  return { g, layers: { head, cut, front, te }, pivot, poses, stamp, glow, parts };
+}
+
+// ---- timeline ----
+const ease = { out: t => 1 - Math.pow(1 - t, 3), in: t => t * t * t, back: t => { const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); } };
+const lerpPose = (D, a, b, t) => { D.pivot.position.lerpVectors(a.pos, b.pos, t); D.pivot.rotation.z = a.rot + (b.rot - a.rot) * t; D.pivot.scale.setScalar(a.scl + (b.scl - a.scl) * t); };
+
+function makeStory(D) {
+  let phase = "idle", t = 0, depth = 0;
+  const setDepth = k => { depth = k; D.layers.head.position.z = 0.05 * k; D.pivot.position.z = 0.055 * k; D.layers.cut.position.z = 0.11 * k; D.layers.front.position.z = 0.19 * k; D.stamp.position.z = 0.2 * k; D.glow.position.z = 0.04 * k; };
+  const burst = () => D.parts.forEach((p, i) => {
+    p.alive = true; p.m.material.opacity = 1;
+    p.m.position.set(toX(CRACK.x) + (Math.random() - .3) * 0.12, toY(CRACK.y) + (Math.random() - .5) * 0.1, 0.12 + Math.random() * 0.12);
+    p.v.set((Math.random() - .25) * 0.35, Math.random() * 0.35, (Math.random()) * 0.25);
+    const s = (i % 3 === 0 ? 0.07 : 0.035) + Math.random() * 0.03; p.m.scale.set(s, s, s);
+    p.m.material.rotation = Math.random() * 6;
+    p.spin = (Math.random() - .5) * 6;
+  });
+  const reset = () => { phase = "pop"; t = 0; lerpPose(D, D.poses.print, D.poses.print, 0); D.layers.te.material.opacity = 1; D.stamp.material.opacity = 0; D.glow.material.opacity = 0; D.parts.forEach(p => { p.alive = false; p.m.material.opacity = 0; }); setDepth(0);
+    ui.chip.textContent = "STATUS: COLLAPSED"; ui.chip.classList.remove("ok"); show(ui.act, false); show(ui.final, false); };
+  setDepth(0);
+  return {
+    get phase() { return phase; },
+    start() { if (phase === "idle") reset(); },
+    replay: reset,
+    rebuild() { if (phase === "wait") { phase = "rise"; t = 0; show(ui.act, false); } },
+    update(dt) {
+      t += dt;
+      if (phase === "pop") { setDepth(ease.back(Math.min(t / 1.6, 1))); if (t > 1.9) { phase = "fall"; t = 0; burst(); } }
+      else if (phase === "fall") {
+        const k = Math.min(t / 1.5, 1); lerpPose(D, D.poses.print, D.poses.fallen, ease.in(k));
+        D.pivot.position.z += 0.055 * depth;
+        D.layers.te.material.opacity = 1 - Math.max(0, (k - .75) / .25);
+        if (t > 2.1) { phase = "wait"; t = 0; show(ui.act, true); }
+      }
+      else if (phase === "rise") {
+        const k = Math.min(t / 1.2, 1); D.layers.te.material.opacity = Math.min(1, k * 3);
+        lerpPose(D, D.poses.fallen, D.poses.rest, ease.back(k)); D.pivot.position.z += 0.055 * depth;
+        D.glow.material.opacity = Math.sin(Math.min(k, 1) * Math.PI) * 0.9;
+        const sk = Math.max(0, Math.min((t - 0.9) / 0.35, 1));
+        D.stamp.material.opacity = sk; D.stamp.scale.setScalar(1 + (1 - ease.out(sk)) * 1.6);
+        D.parts.forEach(p => p.m.material.opacity *= 0.9);
+        if (t > 1.6) { phase = "done"; t = 0; ui.chip.textContent = "STATUS: STANDING"; ui.chip.classList.add("ok"); show(ui.final, true); }
+      }
+      // particles
+      D.parts.forEach(p => { if (!p.alive) return; p.v.y -= 1.6 * dt; p.m.position.addScaledVector(p.v, dt); p.m.material.rotation += p.spin * dt; if (p.m.position.y < -1.4) p.alive = false; });
+    },
+  };
+}
+
+// ---- 3D mode ----
+let mode = null, stopCurrent = null;
+async function start3D() {
+  ui.load.classList.remove("hidden");
+  try { await loadTextures(); } catch (e) { fail("Could not load the poster layers. Check your connection and reload."); return; }
+  const stage = $("stage");
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight); renderer.outputColorSpace = THREE.SRGBColorSpace;
+  stage.appendChild(renderer.domElement);
+  const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.05, 50);
+  const D = buildDiorama(), story = makeStory(D);
+  const rig = new THREE.Group(); rig.add(D.g); scene.add(rig);
+  // soft paper shadow
+  const sh = new THREE.Mesh(new THREE.PlaneGeometry(1.08, 1.58), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .22 })); sh.position.set(0.03, -0.04, -0.03); rig.add(sh);
+  const fit = () => {
+    const a = innerWidth / innerHeight, f = THREE.MathUtils.degToRad(cam.fov / 2);
+    cam.aspect = a; cam.position.set(0, 0, Math.max(0.86 / Math.tan(f), 0.6 / (Math.tan(f) * a)) * 1.08); cam.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight);
+  };
+  fit(); addEventListener("resize", fit);
+  // tilt: drag + gyro
+  const tgt = { x: 0, y: 0 }; let drag = null, gyro = false;
+  const el = renderer.domElement;
+  el.addEventListener("pointerdown", e => { drag = { x: e.clientX, y: e.clientY, tx: tgt.x, ty: tgt.y }; el.setPointerCapture(e.pointerId); });
+  el.addEventListener("pointermove", e => { if (!drag) return; tgt.y = THREE.MathUtils.clamp(drag.ty + (e.clientX - drag.x) * 0.006, -0.9, 0.9); tgt.x = THREE.MathUtils.clamp(drag.tx + (e.clientY - drag.y) * 0.004, -0.5, 0.5); });
+  el.addEventListener("pointerup", () => drag = null);
+  const onOri = e => { if (e.gamma == null) return; gyro = true; if (drag) return; tgt.y = THREE.MathUtils.clamp(e.gamma / 45, -0.7, 0.7); tgt.x = THREE.MathUtils.clamp((e.beta - 55) / 70, -0.45, 0.45); };
+  addEventListener("deviceorientation", onOri);
+  const clock = new THREE.Clock(); let time = 0;
+  renderer.setAnimationLoop(() => {
+    const dt = Math.min(clock.getDelta(), 0.05); time += dt;
+    const idle = (!drag && !gyro) ? 0.22 : 0;
+    rig.rotation.y += ((tgt.y + Math.sin(time * 0.5) * idle) - rig.rotation.y) * 0.08;
+    rig.rotation.x += ((tgt.x + Math.sin(time * 0.37) * idle * 0.4) - rig.rotation.x) * 0.08;
+    story.update(dt); renderer.render(scene, cam);
+  });
+  ui.load.classList.add("hidden"); show(ui.hud, true); story.start();
+  mode = { story, name: "3d" };
+  stopCurrent = () => { renderer.setAnimationLoop(null); removeEventListener("resize", fit); removeEventListener("deviceorientation", onOri); renderer.dispose(); el.remove(); };
+}
+
+// ---- AR mode (MindAR image tracking) ----
+async function startAR() {
+  ui.load.classList.remove("hidden");
+  let MindARThree;
+  try { [{ MindARThree }] = await Promise.all([import("mindar-image-three"), loadTextures()]); }
+  catch (e) { ui.load.classList.add("hidden"); fail("AR could not load on this device. Try 3D mode instead."); return start3D(); }
+  document.body.classList.add("ar");
+  const mind = new MindARThree({ container: $("stage"), imageTargetSrc: "assets/targets.mind", uiLoading: "no", uiScanning: "no", uiError: "no", filterMinCF: 0.0001, filterBeta: 0.001 });
+  const { renderer, scene, camera } = mind;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  const anchor = mind.addAnchor(0);
+  const D = buildDiorama(), story = makeStory(D);
+  anchor.group.add(D.g); D.g.visible = false;
+  anchor.onTargetFound = () => { D.g.visible = true; show(ui.hint, false); story.start(); };
+  anchor.onTargetLost = () => { D.g.visible = false; if (story.phase !== "done") show(ui.hint, true); };
+  try { await mind.start(); }
+  catch (e) { ui.load.classList.add("hidden"); document.body.classList.remove("ar"); fail("Camera permission is needed for AR. Showing 3D mode instead."); return start3D(); }
+  const clock = new THREE.Clock();
+  renderer.setAnimationLoop(() => { story.update(Math.min(clock.getDelta(), 0.05)); renderer.render(scene, camera); });
+  ui.load.classList.add("hidden"); show(ui.hud, true); show(ui.hint, true);
+  mode = { story, name: "ar" };
+  stopCurrent = () => { renderer.setAnimationLoop(null); mind.stop(); $("stage").innerHTML = ""; document.body.classList.remove("ar"); };
+}
+
+async function go(which) {
+  ui.err.style.display = "none";
+  if (stopCurrent) { stopCurrent(); stopCurrent = null; }
+  show(ui.final, false); show(ui.act, false); show(ui.hint, false);
+  ui.intro.classList.add("hidden");
+  if (which === "3d") {
+    if (typeof DeviceOrientationEvent !== "undefined" && DeviceOrientationEvent.requestPermission) { try { await DeviceOrientationEvent.requestPermission(); } catch {} }
+    await start3D();
+  } else await startAR();
+}
+$("go3D").onclick = () => go("3d");
+$("goAR").onclick = () => go("ar");
+$("no").onclick = () => mode && mode.story.rebuild();
+$("again").onclick = () => mode && mode.story.replay();
+$("switch").onclick = () => go(mode && mode.name === "ar" ? "3d" : "ar");
+if (new URLSearchParams(location.search).has("3d")) go("3d");
+</script>
+</body>
+</html>
