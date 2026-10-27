@@ -17,7 +17,7 @@
 <link rel="preload" href="assets/targets.mind" as="fetch" crossorigin>
 <link rel="preload" href="assets/base.webp" as="image">
 <link rel="preload" href="assets/cutL.webp" as="image">
-<link href="https://fonts.googleapis.com/css2?family=Anek+Devanagari:wdth,wght@75..100,600..800&family=Kalam:wght@400;700&family=Mukta:wght@600;700;800&family=Special+Elite&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anek+Devanagari:wdth,wght@75..100,600..800&family=Mukta:wght@600;700;800&family=Special+Elite&display=swap" rel="stylesheet">
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -41,9 +41,9 @@
   #scan .frame i:nth-child(3) { left: 0; bottom: 0; border-left-width: 5px; border-bottom-width: 5px; transform: rotate(2deg); }
   #scan .frame i:nth-child(4) { right: 0; bottom: 0; border-right-width: 5px; border-bottom-width: 5px; transform: rotate(-3deg); }
   @keyframes breathe { 50% { transform: scale(.96); } }
-  #scan p { position: fixed; left: 0; right: 0; bottom: max(36px, env(safe-area-inset-bottom)); margin: 0; text-align: center; font: 700 24px/1.2 'Kalam', cursive; color: #f3e9d6; text-shadow: 0 2px 6px rgba(0,0,0,.7); transform: rotate(-2deg); }
-  #snd { position: fixed; top: max(14px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%) rotate(-2deg); z-index: 8; font: 700 16px 'Kalam'; background: #f3e9d6; padding: 4px 14px; box-shadow: 3px 3px 0 #15100b; white-space: nowrap; }
-  #flatLink { position: fixed; left: 50%; bottom: max(96px, calc(env(safe-area-inset-bottom) + 80px)); transform: translateX(-50%) rotate(1.5deg); z-index: 8; font: 700 18px 'Kalam'; color: #f3e9d6; background: none; border: 0; text-decoration: underline wavy #c8102e; text-underline-offset: 6px; white-space: nowrap; cursor: pointer; }
+  #scan p { position: fixed; left: 0; right: 0; bottom: max(36px, env(safe-area-inset-bottom)); margin: 0; text-align: center; font: 700 22px/1.2 'Mukta', sans-serif; color: #f3e9d6; text-shadow: 0 2px 6px rgba(0,0,0,.7); transform: rotate(-2deg); }
+  #snd { position: fixed; top: max(14px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%) rotate(-2deg); z-index: 8; font: 700 15px 'Mukta'; background: #f3e9d6; padding: 4px 14px; box-shadow: 3px 3px 0 #15100b; white-space: nowrap; }
+  #flatLink { position: fixed; left: 50%; bottom: max(96px, calc(env(safe-area-inset-bottom) + 80px)); transform: translateX(-50%) rotate(1.5deg); z-index: 8; font: 700 17px 'Mukta'; color: #f3e9d6; background: none; border: 0; text-decoration: underline wavy #c8102e; text-underline-offset: 6px; white-space: nowrap; cursor: pointer; }
   @media (prefers-reduced-motion: reduce) { #scan .frame { animation: none; } }
 </style>
 </head>
@@ -130,7 +130,7 @@ function canvasTex(w, h, draw) { const c = document.createElement("canvas"); c.w
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.userData.aspect = h / w; return t; }
 function svgTex(svg, w, h) { return new Promise(res => { const im = new Image(); im.onload = () => res(canvasTex(w, h, x => x.drawImage(im, 0, 0, w, h)));
   im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg); }); }
-const fontsReady = Promise.all(["800 60px 'Anek Devanagari'", "700 60px 'Kalam'", "800 40px 'Mukta'", "700 40px 'Mukta'", "30px 'Special Elite'"].map(f => document.fonts.load(f))).catch(() => {});
+const fontsReady = Promise.all(["800 60px 'Anek Devanagari'", "800 40px 'Mukta'", "700 40px 'Mukta'", "30px 'Special Elite'"].map(f => document.fonts.load(f))).catch(() => {});
 const grit = (x, w, h, n = 300) => { x.save(); x.globalCompositeOperation = "destination-out"; for (let i = 0; i < n; i++) { x.globalAlpha = Math.random() * .6; x.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 3, 2); } x.restore(); };
 function tornPaper(x, w, h, seed, fill = "#efe5d2") {
   const r = rng(seed); x.beginPath(); x.moveTo(0, 10 + r() * 10);
@@ -156,7 +156,7 @@ function lineTex(hi, en, { size = 84 } = {}) {
 function yearTex(num, tag) { return canvasTex(900, 600, (x, w, h) => {
   x.translate(w / 2, h / 2 - 30); x.rotate(-.06); x.textAlign = "center"; x.font = "800 300px 'Anek Devanagari'";
   x.fillStyle = "rgba(21,16,11,.9)"; x.fillText(num, 12, 100); x.fillStyle = "#c8102e"; x.fillText(num, 0, 88);
-  x.rotate(.1); x.font = "700 64px 'Kalam'"; const tw = x.measureText(tag).width; x.fillStyle = "#15100b"; x.fillRect(-tw / 2 - 26, 150, tw + 52, 92); x.fillStyle = "#f3e9d6"; x.fillText(tag, 0, 218);
+  x.rotate(.1); x.font = "800 58px 'Mukta'"; const tw = x.measureText(tag).width; x.fillStyle = "#15100b"; x.fillRect(-tw / 2 - 26, 150, tw + 52, 92); x.fillStyle = "#f3e9d6"; x.fillText(tag, 0, 218);
   x.setTransform(1, 0, 0, 1, 0, 0); grit(x, w, h, 500); }); }
 function newsTex(head, sub) { return canvasTex(1240, 250, (x, w, h) => {
   x.fillStyle = "#c8102e"; x.fillRect(0, 30, 270, 150); x.fillStyle = "#fff"; x.font = "800 58px 'Anek Devanagari'"; x.textBaseline = "middle"; x.textAlign = "center"; x.fillText("ब्रेकिंग", 135, 110);
@@ -205,7 +205,7 @@ function bubbleTex(text, { size = 58, tail = "left", color = K } = {}) {
     const tx = tail === "left" ? 120 : w - 120, dir = tail === "left" ? -1 : 1;
     x.beginPath(); x.moveTo(tx - 26, B - 3); x.lineTo(tx + dir * 46, h - 8); x.lineTo(tx + 22, B - 3); x.fillStyle = "#fbf4e4"; x.fill();
     x.beginPath(); x.moveTo(tx - 26, B + 1); x.lineTo(tx + dir * 46, h - 8); x.lineTo(tx + 22, B + 1); x.stroke();
-    x.fillStyle = color; x.font = `700 ${size}px 'Kalam'`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(text, w / 2, (T + B) / 2 + 6); }); }
+    x.fillStyle = color; x.font = `800 ${Math.round(size * .9)}px 'Mukta'`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(text, w / 2, (T + B) / 2 + 6); }); }
 const stageTex = () => canvasTex(1024, 720, (x, w, h) => {
   const g = x.createRadialGradient(w * .5, h * .4, 30, w * .5, h * .45, w * .62); g.addColorStop(0, "#fff1c9"); g.addColorStop(.45, "#f2c070"); g.addColorStop(1, "#6b3612");
   x.fillStyle = g; x.fillRect(0, 0, w, h); for (let i = 0; i < 9000; i++) { x.fillStyle = `rgba(70,35,10,${Math.random() * .07})`; x.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 3, 1); }
@@ -243,13 +243,13 @@ const endTex = () => canvasTex(1000, 1000, (x, w, h) => {
   x.font = "800 100px 'Anek Devanagari'"; x.fillStyle = "#15100b"; x.fillText("सत्यनिष्ठा की नींव पर", 56, 280);
   let px = 56; x.fillText("पुल ", px, 395); px += x.measureText("पुल ").width; x.fillStyle = "#1d6b43"; x.fillText("टिकते", px, 395); const tw = x.measureText("टिकते").width;
   wavy(x, px - 4, px + tw + 6, 418, "#1d6b43", 7); px += tw; x.fillStyle = "#15100b"; x.fillText(" हैं।", px, 395);
-  x.save(); x.translate(760, 560); x.rotate(-.12); x.fillStyle = "#c8102e"; x.font = "700 50px 'Kalam'"; x.textAlign = "center"; x.fillText("बस एक ‘ना’", 0, 0); x.fillText("काफ़ी था।", 0, 62); x.restore();
+  x.save(); x.translate(760, 560); x.rotate(-.12); x.fillStyle = "#c8102e"; x.font = "800 46px 'Anek Devanagari'"; x.textAlign = "center"; x.fillText("बस एक ‘ना’", 0, 0); x.fillText("काफ़ी था।", 0, 62); x.restore();
   x.setLineDash([10, 9]); x.strokeStyle = "#9c8f7c"; x.lineWidth = 3; x.beginPath(); x.moveTo(56, 470); x.lineTo(w - 56, 470); x.stroke(); x.setLineDash([]);
-  x.save(); x.translate(60, 640); x.rotate(-.07); x.fillStyle = "#1d2c6b"; x.font = "700 130px 'Kalam'"; x.fillText("पुलकित", 0, 0); const sw = x.measureText("पुलकित").width;
+  x.save(); x.translate(60, 640); x.rotate(-.07); x.fillStyle = "#1d2c6b"; x.font = "800 112px 'Anek Devanagari'"; x.fillText("पुलकित", 0, 0); const sw = x.measureText("पुलकित").width;
   x.strokeStyle = "#1d2c6b"; x.lineWidth = 5; x.beginPath(); x.moveTo(-6, 30); x.bezierCurveTo(sw * .4, 10, sw * .8, 50, sw + 30, 12); x.stroke(); x.restore();
   x.fillStyle = "#15100b"; x.font = "34px 'Special Elite'"; x.fillText("Pulkit · MBA 04", 64, 740); x.fillText("Roll No. 250101187 · IIM Mumbai", 64, 788);
   x.font = "800 34px 'Anek Devanagari'"; x.fillStyle = "#6d6153"; x.fillText("सत्यनिष्ठा से समृद्धि", 64, 862);
-  x.fillStyle = "#15100b"; x.font = "700 44px 'Kalam'"; const hint = "↺ फिर से देखने के लिए टैप करो"; x.fillText(hint, 64, 940); wavy(x, 64, 64 + x.measureText(hint).width, 956, "#c8102e", 4); });
+  x.fillStyle = "#15100b"; x.font = "800 40px 'Mukta'"; const hint = "↺ फिर से देखने के लिए टैप करो"; x.fillText(hint, 64, 940); wavy(x, 64, 64 + x.measureText(hint).width, 956, "#c8102e", 4); });
 
 let T = null;
 async function loadAll() {
